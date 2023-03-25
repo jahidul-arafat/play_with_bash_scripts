@@ -1,0 +1,14 @@
+./.git
+./dev
+./generated
+./lib
+./opcache
+./phpserver
+./pub/static
+./pub/media/catalog/product/cache
+./setup
+./update
+./cm_redis_tools
+./var
+./node_modules
+./vendor
