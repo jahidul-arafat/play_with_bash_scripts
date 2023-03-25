@@ -1,0 +1,25 @@
+(a) Install multipass virtualization---
+https://multipass.run/
+https://multipass.run/docs/installing-on-linux
+
+(b) Working with instance
+https://multipass.run/docs/working-with-instances
+
+(c) Setting up the primary instance
+https://multipass.run/docs/primary-instance
+
+(d) check the available images
+https://multipass.run/docs/find-command
+
+
+My Note
+-------
+--> By default multipass having 1GB of RAM, if you want to modify it do below
+sudo systemctl stop snap.multipass.multipassd.service
+sudo vi /var/snap/multipass/common/data/multipassd/multipassd-vm-instances.json
+sudo systemctl start snap.multipass.multipassd.service
+
+Optional
+---------
+(a) git link
+https://github.com/canonical/multipass
