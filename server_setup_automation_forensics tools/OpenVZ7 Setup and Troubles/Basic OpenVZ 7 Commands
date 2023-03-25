@@ -1,0 +1,20 @@
+Part-1: List all the available containers
+------------------------------------------
+1. sudo vzlist -a
+
+Part-2: Create a Container
+--------------------------
+2. sudo vzctl create 101 --ostemplate centos-7-x86_64
+or
+2. sudo vzctl create 101 --ostemplate centos-7-x86_64 --ipadd XX.XX.XX.XX/XX --hostname abc.example.com
+
+Part-3: Edit the container config file from main EC2 instance
+-------------------------------------------------------------
+3. sudo vim /etc/vz/conf/101.conf
+## If a container config file i.e. 101.conf is changed, you must have to restart the container
+
+Part-4: Start, Stop and Destroy a contianer
+--------------------------------------------
+4. sudo vzctl start 101
+5. sudo vzctl stop 101
+6. sudo vzctl destroy 101

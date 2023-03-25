@@ -1,0 +1,101 @@
+# This is the OpenVZ7 setup in Centos 7
+PART-1: Installation
+---------------------
+1a. Necessary Repository Setups
+--------------------------------
+1. sudo yum install epel-release
+2. sudo yum install http://repo.virtuozzo.com/vzlinux/7.7/x86_64/os/Packages/j/json-c-0.11-13.vl7.1.x86_64.rpm
+3. sudo yum install http://repo.virtuozzo.com/vzlinux/7.7/x86_64/os/Packages/j/jansson-2.10-1.vl7.1.x86_64.rpm
+4. sudo yum localinstall https://download.openvz.org/virtuozzo/releases/openvz-7.0.3-479/x86_64/os/Packages/o/openvz-release-7.0.3-3.vz7.x86_64.rpm
+
+1b. Update the yum repository and check the repository list
+-----------------------------------------------------------
+5. sudo yum repolist
+6. sudo yum update -y
+
+1c. Now install the vzkernel packages
+--------------------------------------
+7. sudo yum install prlctl prl-disp-service vzkernel
+
+PART-2: Now reboot your EC2 instance, this reboot will ensure your kernal has been updated to the vz7 kernel
+-------------------------------------------------------------------------------------------------------------
+8. uname -a
+
+PART-3: Edit the vz.conf file as attached
+-----------------------------------------
+9.  sudo vim /etc/vz/vz.conf
+10. sudo systemctl restart vz
+11. sudo systemctl status vz    #-----> active(exited) 
+
+PART-4: Check the vzpkg available and install and cache the centos-7-x86_64 package
+-----------------------------------------------------------------------------------
+12.  sudo vzpkg list --available
+13.  sudo vzpkg install template centos-7-x86_64
+14.  sudo vzpkg create cache centos-7-x86_64  #--> this may have some failed status, like ploop not working, dont be annoyed of it
+
+
+PART-5: Create a container with id 101 and edit the 101.conf file and then start the container
+-----------------------------------------------------------------------------------------------
+15. sudo vzctl create 101 --ostemplate centos-7-x86_64
+16. sudo vim /etc/vz/conf/101.conf
+17. sudo vzctl start 101
+18. sudo vzlist -a
+19. route -n                    #-----> This will help you to see all the contianers and their route paths with source and destination
+20. sudo vzctl enter 101
+
+PART-5a: Into the 101 container
+--------------------------------
+5a1: Check net conenctivity of the container
+--------------------------------------------
+21. ping google.com / ping 8.8.8.8
+22. cat /etc/resolv.conf
+23. yum repolist
+24. yum update -y
+
+5a2. Add epel and rami repo to the container
+---------------------------------------------
+weblink: https://www.tecmint.com/enable-remi-repository-in-centos-redhat-fedora/
+---------------------------------------------------------------------------------
+25. yum install epel-release
+26. yum install http://rpms.remirepo.net/enterprise/remi-release-7.rpm
+
+##By default, the remi repo is not enabled, so enable it first
+27. vim /etc/yum.repos.d/remi.repo   #-----> change the [remi] enabled=1
+28. yum repolist                     # this command will update the repolist
+29. yum update -y
+
+
+
+PART-6: Create another container with id 102 and edit the 102.conf file and then start the container and add epel and remi repo to it
+--------------------------------------------------------------------------------------------------------------------------------------
+## Similar to Part5, 5a1, 5a2
+## hostname: lab2.harriswebworks.com
+
+
+PART-7: Ensure 80% Memory to Container 101 which will be hosting the main webserver
+-----------------------------------------------------------------------------------
+Link: 
+https://docs.openvz.org/openvz_users_guide.webhelp/_configuring_container_memory_guarantees.html
+
+# Syntax: sudo vzctl set MyContainer --memguarantee PercentageNumber
+30. sudo vzctl set 101 --memguarantee 80 --save 
+
+# To revert to the default setting, run
+31. sudo vzctl set 101 --memguarantee auto
+
+PART-8: Configure the Container Memory Allocation Limit
+--------------------------------------------------------
+Link: https://docs.openvz.org/openvz_users_guide.webhelp/_configuring_container_memory_allocation_limit.html
+# Allolcate 6G memory limit to the 102 container
+
+32. sudo vzctl set 102 --vm_overcommit 4 --save
+***Note: Here 4= 4X1.5=6GB 
+
+
+
+
+
+
+
+
+

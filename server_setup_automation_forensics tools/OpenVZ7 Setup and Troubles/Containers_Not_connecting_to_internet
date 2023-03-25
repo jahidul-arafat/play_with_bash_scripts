@@ -1,0 +1,19 @@
+
+PART-1: What I have tried when my Containers were not connecting to internet
+-----------------------------------------------------------------------------
+(a) To check whether the DNS server is working properly: NSLOOKUP
+------------------------------------------------------------------
+1. sudo yum install bind-utils
+2. nslookup mirrorlist.centos.org  # here I have used it, when I have found that my containers cant ping to internet
+3. nslookup lab1.harriswebworks.com
+4. nslookup lab2.harriswebworks.com
+
+(b) Check the /etc/resolv.conf file, if you edit it then must restart the network
+----------------------------------------------------------------------------------
+5. sudo vim /etc/resolv.conf
+6. sudo systemctl restart network
+
+(c) Checked out some network-scripts and tried to edit some for the solution, though those didnt worked and didnt solved the problem
+-----------------------------------------------------------------------------------
+7. ip a s           #---> to check at which network interface I am connected
+8. sudo vim /etc/sysconfig/network-scripts/ifcfg-eth0 

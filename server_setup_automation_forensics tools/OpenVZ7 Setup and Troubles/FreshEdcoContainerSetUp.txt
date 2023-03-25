@@ -1,0 +1,45 @@
+1  cd /home/edco/
+    2  wget https://www.edcosource.com/backup_files.zip
+    3  wget https://www.edcosource.com/edco.sql
+    4  mysql -uedco -p edco < edco.sql
+    5  unzip backup_files.zip
+    6  chown -R edco:edco public_html
+    7  service httpd restart
+    8  exit
+    9  ps auwx
+   10  cd /home/edco/public_html/
+   11  ls -alh
+   12  ping 172.31.12.121
+   13  ping 3.223.234.82
+   14  exit
+   15  service sshd restart
+   16  service iptables stop
+   17  service iptables start
+   18  service firewalld stop
+   19  systemctl disable firewalld
+   20  chkconfig firewalld off
+   21  passwd edco
+   22  cd /home/edco/public_html/
+   23  cd ..
+   24  chown -R edco:edco public_html
+   25  exit
+   26  curl -s -o /usr/local/bin/n98-magerun2 https://files.magerun.net/n98-magerun2.phar
+   27  curl -s -o /usr/local/bin/magerun https://files.magerun.net/n98-magerun2.phar
+   28  exit
+   29  rm -f /etc/localtime && ln -s /usr/share/zoneinfo/America/New_York /etc/localtime && touch /etc/default/locale
+   30  cat /etc/default/locale <<EOF
+   31  LANG="en_US.utf8"
+   32  LANGUAGE="en_US:"
+   33  EOF
+   34  env LC_ALL=en_US.UTF-8 && export LC_ALL && localectl set-locale LANG=en_US.utf8
+   35  ps auwx
+   36  free -m
+   37  service elasticsearch restart
+   38  ps auwx
+   39  free -m
+   40  curl -XGET http://localhost:9200/_cat/indices?v
+   41  exit
+   42  service httpd restart
+   43  free -m
+   44  exit
+   45  find /etc/httpd/* -type f -exec sed -i 's/172.31.0.195/172.31.9.62/gI' {} \; && service httpd restart && service php-fpm restart
