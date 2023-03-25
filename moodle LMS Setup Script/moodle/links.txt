@@ -1,0 +1,21 @@
+Concurrency Issue:
+-----------------------
+https://moodle.org/mod/forum/discuss.php?d=356526
+
+Video link:
+https://www.youtube.com/watch?v=KZChI3HILPI
+
+About moodle
+-------------
+https://docs.moodle.org/39/en/Moodle_site_moodle_directory#:~:text=The%20Moodle%20code%20is%20located,a%20directory%20called%20%22moodle%22.
+Report_benchmark:
+----------------
+https://moodle.org/plugins/report_benchmark
+
+Performance Recommendation
+--------------------------
+https://docs.moodle.org/39/en/Performance_recommendations
+
+Securing moodle data
+----------------------
+https://docs.moodle.org/39/en/Installing_Moodle#Securing_moodledata_in_a_web_directory

@@ -1,0 +1,142 @@
+EDU SOFT MOODLE IMPLEMENTATION
+----------------------------
+A1. Operational Requirement
+-----------------------
+|--> Video Streaming
+|--> 1-2TB Streaming for seeing the uploaded video i.e. 1000 concurrent users
+|--> Scalability of different resources
+|--> Addition of Load Balancer
+
+Solution 1
+-----------
+> For video Streaming the site might require a Compute Optimized (CO) EC2 instance in AWS
+|--> Preferable EC2 Instance: C4.4xlarge
+    |--> vCPUs: 16
+    |--> Memory: 30GiB
+    |--> GPUs: N/A
+    |--> Network Performance: High
+|--> Elastic BLoc Storage (EBS):
+    |--> Generale Purpose (GP2) SSD: 1024GB
+
+------------------------------------------------------
+Total Cost:  367.92 + 102.40 USD = 470.32 USD + 50 Dollar for AWS S3 Bucket, CDN, CloudWatch
+
+Features of this solution
+|--> Compute Optimized solution rather than a general purpose one
+|--> Cloud Storage access speed: maximum encoding performance
+    |--> Download Throughput: ~119 MBps
+    |--> Upload throughput: ~135 MBps
+
+|--> Disk Throughput: the source file, the intermediate files generated as part of the encoding process, and
+    the encoded output were stored in the instance storage. We then checked if the disk throughput was sufficient.
+    |--> Volume size: 1TB
+    |--> Max. IOPS/volume: 10,000
+    |--> Max. Throughput/volume: 160 MiB/s
+|--> Encoding Performance: 1.15x better than the traditional EC2 intance
+|--> Conclusion: So for a video streaming site planning for 1000 concurrent users, c4.4xlarge is an optimal choice in all three sectors:Cloud Storage access speed, Disk Throughput and Encoding Performance
+|--> Why we are going to choose this General Purpose SSD (gp2) as EBS?
+    |--> because of lower price and best balance between storage size, price and performance.
+    |--> Read Throughput: ~120 MBps
+    |--> Write Throughput: ~119 MBps
+    |--> An alternative solution could be Provisioned IOPS SSD (io1), but its write throughput is inconsistent and fluctuating between (50 to 120 MBps). Thats why avoided.
+
+Architecture
+-------------
+(a) At Application level
+------------------------
+|--> Compute Optimized EC2 instance at AWS
+|--> Professional level virtualization using OpenVZ 7
+|--> Operating system will be used: Centos 8 having support upto 2029 (Latest)
+|--> WebServer: Apache 2.4.*
+|--> PHP Version: ~7.3
+|--> Cache Server: Redis (Page and Session Cache)- multiple redis instance
+|--> Search Engine: ElasticSearch
+
+(b) At Database Level
+--------------------
+|--> DB will be used: Percona 5.7 (client + server)
+|--> With Percona XTRA DB Backup facility
+|--> Having Master-Slave Architecture
+** Better to avoid MariaDB or MSSQL here, as the consistency, cloning, backup and security facilities offered by Percona is exceptional
+
+(b) At Orchestration level
+B1. Automation
+----------------
+|--> automatic server site package updater: dnf-automation with email notification to administrator
+|--> Daily report of server access log with GeoLocation and GUI to the administrator and person authorized
+|--> SQL DB health report: once in a week
+|--> Automation of the process health and reporting through email if certain process consuming much memories
+|--> Automatic DB backup with naming convention.
+
+B2. Security
+-------------
+|--> Live log monitoring of server: will be used ELK (Elastic Search, Log Stash and Kibana) with filebeat and Machine Learning for vulnerability scanning
+|--> Setting up malware scanner at the webserver root directory with email reporting
+|--> Sophisticated Security Group design in the AWS for the Server instead of the default firewall
+|--> Croning the other GeoLocation access, IP tracking, URL listing everything with email notification with GUI statistics
+
+B3. Load Balancer
+-----------------
+|--> Custom Designed Load Balancer inside the Server instead of Elastic Load Balancer in AWS to avoid the additional cost
+
+B4. For the Developers and for the Admin Clint
+-----------------------------------------------
+|--> A dev server for the developer
+|--> A production server for the live site
+|--> A staging server for updating the dev contents to the live server having a validation from the admin client, which will help to avoid the code redundencies, broken js and etc in the server
+|--> Incorporation of CI/CD pipeline for the developers using Jeking, Maven, Ansible and Kunernetes launching the code in EC2 instance.
+
+
+B5. For Video Streaming in multiple OTT (Over The Top) devices
+-------------------------------------------------------------
+|--> We will be used S3 Bucket of AWS, mostly free and very cheap
+|--> along with AWS CloudFront CDN (Content Delivery Network) to fasten the Video Streaming among N-number of concurrent users
+    |--> CDN: Web service to distribute content to end users with low latency and high data transfer speeds.
+|--> We will also be using Amazon CloudWatch dashboard that monitors the ingress ans egress request to the EC2 instance having an overview of health and performance.
+
+Notes:
+-----
+(a) 2-tire architecture could be an option but better to be avoided as Having Webserver and DB server in different machine
+    may result in network latency, increase Bandwidth Cost and degraded performance
+
+
+Solution 2:
+-----------
+|--> EC2 Instance: t3a.2xlarge
+    |--> vCPUs: 8
+    |--> Memory: 32 BiB
+    |--> GPUs: N/A
+    |--> Network Performance: upto 5 Gigabit
+|--> Elastic Block Storage (EBS):
+    |--> General Purpose (GP2) SSD: 1024GB
+
+-------------------------------------------------
+Total Cost: 137.68 + 102.40= 240.08 USD + 50 Dollar for AWS S3 Bucket, CDN, CloudWatch
+
+Drawback of this solution
+---------------------------
+|--> will be missing the following features required mostly for a video streaming online platform
+  |--> Cloud Storage access speed: low
+  |--> Disk Throughput: low
+  |--> Encoding performance: N/A
+
+
+Recommendation:
+---------------
+> Better to go with Solution 1, with all the custom made feature to ensure the site having a 80+ page speed and A in security Assessment.
+> The custom designed Redis will make the site faster
+> Elastic search will make the searching 100 times faster than the traditional default search engine available in the application.
+> Staging server will make feature (any future features) availability easy and approval from the admin before deploying to the production site.
+> CI/CD pipeline will make the whole process of deployment easy for the DEV and QA team.
+> CDN will make the content delivery faster for a country like Bangladesh having end users with low latency but high data transfer speeds.
+> The automation software will make the server orchestration easy
+> ELK setup with ML will improve the live server monitoring significantly.
+> Malware Scanner will keep the system scanned and reported at a periodic interval.
+
+
+
+Thanks
+Jahidul Arafat
+RHCSA, RHCE, RHCVE, CHE, AWS Solution Architect Associate
+DevOPs Engineer and System Administrator
+HarrisWebWorks, Woodbridge, CT, USA

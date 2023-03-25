@@ -1,0 +1,7 @@
+System Overview
+-----------------
+[Metricbeat System] Host overview ECS
+
+SQL overview
+------------
+[Metricbeat MySQL] Database Overview

@@ -1,0 +1,23 @@
+A. Concurrency Issues
+---------------------
+1. Ensuring system scalability of atleast 4000 concurrent users with minimum 10000 webserver access and resource requests per second during
+the pick teaching learning hours.
+
+B. LAMP STACK Requirement
+-------------------------
+2. system should have the finest LAMP STACK setup  with all the latest version of softwares.
+3. The LAMP Stack setup should also meet the moodle standard requirement
+
+C. Cloud and System Architecture
+---------------------------------
+4. The system should be deployed on the most compatible  cloud linux server
+5. The system should have a load balancer strategy inside to ensure the smooth business operations during the pick teaching learning hours.
+6. The system must have the sophisticated and balanced search and caching strategies installed
+7. The system should ensure a modern and fault tolerant Database architecture with proper data backup and synchronization policies
+8. The system system should have a structured storage policy setup and backup and rollback plan.
+9. The system should adopt minimul AWS resources and the solution must be best performing with optimal resource cost.
+
+D. Security
+------------
+10. The system should be highly communicative to the system administrator.
+11. The system should report to every incidents and security issues to the system administrator

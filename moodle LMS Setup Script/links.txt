@@ -1,0 +1,5 @@
+moodle.txt
+----------
+https://calculator.aws/#/createCalculator
+https://www.ittiam.com/making-optimal-deployment-choices-encoding-system-aws/
+https://aws.amazon.com/solutions/implementations/live-streaming-on-aws/

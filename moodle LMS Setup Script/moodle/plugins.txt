@@ -1,0 +1,9 @@
+ES
+---
+https://moodle.org/plugins/pluginversions.php?plugin=search_elastic
+
+kibana
+-------
+mport grey out ML:
+https://discuss.elastic.co/t/import-button-grayed-out-for-csv-import/204825
+https://www.elastic.co/blog/importing-csv-and-log-data-into-elasticsearch-with-file-data-visualizer
