@@ -1,0 +1,227 @@
+Part-A: Initial Login using
+-------------------
+ssh -i "HWW_WordPress_2020.pem" centos@52.55.22.138
+
+Part-B: Modify the /etc/ssh/sshd_conf as below
+----------------------------------------------
+sudo sed -i 's/\#PermitRootLogin yes/PermitRootLogin yes/' /etc/ssh/sshd_config
+sudo sed -i 's/\PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+sudo sed -i "s/.*Port 22/Port 7575/g" /etc/ssh/sshd_config
+sudo sed -i "s/.*LoginGraceTime.*/LoginGraceTime 30/" /etc/ssh/sshd_config
+sudo sed -i "s/.*MaxAuthTries.*/MaxAuthTries 6/" /etc/ssh/sshd_config
+sudo sed -i "s/.*X11Forwarding.*/X11Forwarding no/" /etc/ssh/sshd_config
+sudo sed -i "s/.*PrintLastLog.*/PrintLastLog yes/" /etc/ssh/sshd_config
+sudo sed -i "s/.*TCPKeepAlive.*/TCPKeepAlive yes/" /etc/ssh/sshd_config
+sudo sed -i "s/.*ClientAliveInterval.*/ClientAliveInterval 720/" /etc/ssh/sshd_config
+sudo sed -i "s/.*ClientAliveCountMax.*/ClientAliveCountMax 120/" /etc/ssh/sshd_config
+sudo sed -i "s/.*UseDNS.*/UseDNS no/" /etc/ssh/sshd_config
+sudo sed -i 's/\/usr\/libexec\/openssh\/sftp-server/\/usr\/libexec\/openssh\/sftp-server -l INFO/' /etc/ssh/sshd_config
+sudo sed -i "s/.*disable_root.*/disable_root 0/" /etc/cloud/cloud.cfg
+sudo semanage port -a -t ssh_port_t -p tcp 7575
+sudo service sshd reload
+sudo passwd root
+--> Beng0lT1g3r
+
+then keep the window open and on another window login as root
+ssh root@52.55.22.138 -p 7575
+
+Part-C: Install several repositories
+------------------------------------------------------------------------------------
+C1. Before REBOOT
+*****************
+yum install wget libprlsdk curl git unzip -y
+yum install http://repo.virtuozzo.com/vzlinux/7.7/x86_64/os/Packages/j/json-c-0.11-13.vl7.1.x86_64.rpm -y
+yum install http://repo.virtuozzo.com/vzlinux/7.7/x86_64/os/Packages/j/jansson-2.10-1.vl7.1.x86_64.rpm -y
+yum install cloud-init
+yum update -y
+reboot
+
+C2. After REBOOT - install package from vz.iso @ mount point
+*****************************************************
+-->Check the openvz latest release version at: https://download.openvz.org/virtuozzo/releases/
+wget https://download.openvz.org/virtuozzo/releases/openvz-7.0.13-216/x86_64/iso/openvz-iso-7.0.13-216.iso
+chmod 660 /dev/loop*
+mkdir /mnt/disk
+mount -o ro,loop openvz-iso-7.0.13-216.iso /mnt/disk
+NOTE **** about this openvz version
+you need to fix all the versions manually like the latest iso file name and other version
+when you loggin as root on bash/shell at the same time login with ftp client
+it will help to get the files in mounted iso disc
+NOTE ENDS****
+
+yum localinstall /mnt/disk/Packages/p/python-daemon-1.6-4.vl7.noarch.rpm -y
+yum localinstall /mnt/disk/Packages/p/p7zip-plugins-16.02-10.vl7.x86_64.rpm -y
+yum localinstall /mnt/disk/Packages/p/python2-psutil-2.2.1-6.vl7.x86_64.rpm -y   <--- this rpm doesnt exists, instead use below
+yum localinstall /mnt/disk/Packages/p/python2-psutil-5.6.7-1.vl7.x86_64.rpm -y
+yum localinstall /mnt/disk/Packages/p/prl-disp-service-7.0.1013.4-1.vz7.x86_64.rpm -y <--- this rpm doesnt exists, instead use below
+yum localinstall /mnt/disk/Packages/p/prl-disp-service-7.0.1046.1-1.vz7.x86_64.rpm -y   ****<---(This line might results in some error, but the next command will resolve it)
+yum localinstall /mnt/disk/Packages/o/openvz-release-7.0.13-7.vz7.x86_64.rpm -y && yum localinstall /mnt/disk/Packages/p/prl-disk-tool-7.0.45-1.vz7.x86_64.rpm -y  && yum localinstall /mnt/disk/Packages/p/prl-disp-service-7.0.1046.1-1.vz7.x86_64.rpm -y  && yum localinstall /mnt/disk/Packages/v/vzkernel-3.10.0-1062.12.1.vz7.131.10.x86_64.rpm -y && yum localinstall /mnt/disk/Packages/p/prlctl-7.0.191-1.vz7.x86_64.rpm -y  && yum localinstall /mnt/disk/Packages/p/python-ploop-7.0.187.1-1.vz7.x86_64.rpm -y &&  systemctl enable libvirtd.service  && systemctl start libvirtd.service
+yum localinstall /mnt/disk/Packages/v/vz-guest-tools-lin-7.12-9.vz7.noarch.rpm
+yum localinstall /mnt/disk/Packages/v/vz-guest-tools-updater-1.0.92-1.vz7.noarch.rpm
+
+yum update -y
+reboot
+
+#New
+yum install  gnome-icon-theme vte3 gtk3
+yum install libvirt-glib nc pygobject3 libyajl  gtk-vnc2  libosinfo spice-gtk3
+yum localinstall /mnt/disk/Packages/p/prl-vzvncserver-7.0.18-1.vz7.x86_64.rpm -y
+yum localinstall /mnt/disk/Packages/v/vim-filesystem-7.4.629-6.vl7.x86_64.rpm
+yum localinstall /mnt/disk/Packages/v/vconfig-1.9-16.vl7.x86_64.rpm
+
+yum localinstall /mnt/disk/Packages/m/mingw-filesystem-base*
+yum localinstall /mnt/disk/Packages/m/mingw32*
+yum install virt-v2v
+
+yum localinstall /mnt/disk/Packages/v/vzprocps-3.3.10-3.vz7.9.x86_64.rpm
+yum localinstall /mnt/disk/Packages/v/vzstat-7.0.24-1.vz7.x86_64.rpm
+yum localinstall /mnt/disk/Packages/p/pkgconfig-0.27.1-4.vl7.1.x86_64.rpm
+yum localinstall /mnt/disk/Packages/p/pcre-8.32-17.vl7.x86_64.rpm
+
+yum localinstall /mnt/disk/Packages/b/bash-completion-2.1-6.vl7.noarch.rpm
+yum update
+yum localinstall /mnt/disk/Packages/b/blktrace-1.0.5-9.vl7.x86_64.rpm
+yum localinstall /mnt/disk/Packages/b/biosdevname-0.7.3-2.vl7.x86_64.rpm
+yum localinstall /mnt/disk/Packages/b/basesystem-10.0-7.vl7.2.noarch.rpm
+
+yum install awscli.noarch
+yum update
+
+reboot
+
+C3. After 2nd time reboot - Restarting several services
+*******************************************************
+uname -a
+-----> Linux ip-172-31-12-76.ec2.internal 3.10.0-1062.12.1.vz7.131.10 #1 SMP Mon Mar 16 15:39:59 MSK 2020 x86_64 x86_64 x86_64 GNU/Linux
+-----> vz7 should appear here, if not, then the vz setup is not correct
+
+systemctl status libvirtd.service
+yum -y update
+systemctl enable vz
+systemctl start vz
+systemctl status vz
+
+service parallels-server restart  ****<-- This service failed and even in my earlier openvz setup it was not there
+service prl-disp status
+service prl-disp start
+service prl-disp status
+systemctl restart vz
+systemctl status vz
+yum install libprlsdk
+
+PART-D: Editing the /etc/vz/vz.conf
+======================================
+vim /etc/vz/vz.conf
+-------------------------------START-----------------------------------------------------
+## Defaults for VEs
+VE_ROOT=/vzdata/vz/root/$VEID              #-----> changed
+VE_PRIVATE=/vzdata/vz/private/$VEID        #-----> changed
+CONFIGFILE="vswap.2048MB"                   #-----> changed
+DEF_OSTEMPLATE="centos-7-x86"               #-----> changed
+NAMESERVER=inherit                          #-----> changed
+
+# Defines FS version for template caching.
+VEFSTYPE="simfs"                            #-----> changed
+-------------------------------END-----------------------------------------------
+systemctl restart vz
+systemctl status vz
+
+PART-E: Download the vzpkg
+******************************
+vzpkg list -O --with-summary    <-- initially it should be empty, if it gives you an error, "Unknown simfs", then restart the vz again
+vzpkg list --available
+vzpkg install template centos-8-x86_64
+vzpkg create cache centos-8-x86_64
+vzpkg list -O --with-summary    --> now the centos8 will be available
+touch /etc/vz/conf/vps.mount
+chmod +x /etc/vz/conf/vps.mount
+vim /etc/vz/conf/vps.mount
+|
+-->
+---------------------------/etc/vz/conf/vps.mount---------------------------------------
+#!/bin/bash
+. ${VE_CONFFILE}
+VE_MOUNT=$(echo ${VE_CONFFILE} | sed 's/\.conf$/.mount/')
+[ -x ${VE_MOUNT} ] && . ${VE_MOUNT}
+exit 0
+--------------------------/etc/vz/conf/vps.mount(ENDS)----------------------------------
+systemctl restart vz
+
+PART-F: Tuning the virtual-guest using tuned-adm
+------------------------------------------------
+Visit: https://www.tecmint.com/tuned-automatic-performance-tuning-of-centos-rhel-servers/
+systemctl status tuned
+tuned-adm active
+tuned-adm recommend
+vim /usr/lib/tuned/virtual-guest/tuned.conf
+|
+-->
+--------------------------/usr/lib/tuned/virtual-guest/tuned.conf-------------------------------
+#
+# tuned configuration
+#
+[main]
+summary=Optimize for running inside a virtual guest
+include=throughput-performance
+[sysctl]
+# If a workload mostly uses anonymous memory and it hits this limit, the entire
+# working set is buffered for I/O, and any more write buffering would require
+# swapping, so it's time to throttle writes until I/O can catch up.  Workloads
+# that mostly use file mappings may be able to use even higher values.
+#
+# The generator of dirty data starts writeback at this percentage (system default
+# is 20%)
+vm.dirty_ratio = 30
+# Filesystem I/O is usually much more efficient than swapping, so try to keep
+# swapping low.  It's usually safe to go even lower than this on systems with
+# server-grade storage.
+vm.swappiness = 10    #--> changed , earlier it was 30
+------------------------------------ENDS-------------------------------------------------------
+systemctl restart tuned
+systemctl status tuned
+
+PART-G: Setup Sendmail
+========================
+mkdir /etc/mail
+wget -O /etc/mail/sendmail.zip http://m2testbox.harriswebworks.com/scripts/sendmail.zip
+unzip /etc/mail/sendmail.zip -d /etc/mail
+mv /etc/mail/sendmail/* /etc/mail/
+rm -rf /etc/mail/sendmail.zip
+***yum install sendmail    --> otherwise makemap will not be found
+sudo makemap hash /etc/mail/authinfo.db < /etc/mail/authinfo
+yum install m4
+yum install sendmail-cf -y
+sudo makemap hash /etc/mail/access.db < /etc/mail/access   && sudo chmod 666 /etc/mail/sendmail.cf   && sudo m4 /etc/mail/sendmail.mc > /etc/mail/sendmail.cf   && sudo m4 /etc/mail/sendmail.mc > /etc/mail/sendmail.cf   && sudo m4 /etc/mail/sendmail.mc > /etc/mail/sendmail.cf   && sudo chmod 644 /etc/mail/sendmail.cf   && sudo makemap hash /etc/mail/virtusertable < /etc/mail/virtusertable   && systemctl daemon-reload   && systemctl restart sendmail.service   && systemctl status sendmail.service
+
+PART-H: Services required restart
+=================================
+systemctl enable libvirtd.service
+systemctl start libvirtd.service
+systemctl status libvirtd.service
+service prl-disp start
+service prl-disp status
+systemctl enable vz
+systemctl start vz
+systemctl status vz
+
+PART-I: Create VZ Container
+===========================
+vzctl create 101 --ostemplate centos-8-x86_64
+vzctl set 101 --ram 4G --swap 4G --save
+vzlist -a
+route -n
+vzctl set 101 --ipadd XX.XX.XX.XX --hostname XX.YY.com --save
+vim /etc/vz/conf/101.conf
+|
+-->
+---------------/etc/vz/conf/101.conf------------------------------------------
+.
+.
+.
+PHYSPAGES="2097152:2097152"             #----> Changed
+SWAPPAGES="2097152:2097152"             #----> Changed
+--------------------ENDS-------------------------------------------------------
+vzctl start 101
+vzctl enter 101
+yum update -y
+dnf update -y
