@@ -1,0 +1,3 @@
+Accustandrd standard operation flow and what to do when you cant ssh to a container and if some services failed, where to look at
+
+> Magento Varlog> PHP> Redis> Backend setting> Selialize data broken which is corrupting the whole db> container restart 

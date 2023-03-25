@@ -1,0 +1,192 @@
+Scenario: 
+--------
+On Feb 20,2020, I have worked around 5 hours to setup multiple redis instances in both of my containers 101 and 102. But everytime after setup, when I tried to restart the redis services, I go the error message like
+"Error in Persistant Key-Value Pair", which is a description written in 
+
+
+Major Link: https://github.com/harriswebworks/server-admin/blob/master/install.sh
+
+@Container 101
+----------------
+
+Step-1: Install the epel-release repo
+=====================================
+> yum install epel-release
+
+Step-2: Install the redis
+=====================================
+> yum install redis
+> redis-server -v
+
+Step-3: Set the Linux kernel overcommit memory setting to 1 by adding vm.overcommit_memory = 1 to /etc/sysctl.conf configuration file.
+======================================================================
+> vim /etc/sysctl.conf
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+sysctl vm.overcommit_memory=1               #---> I didnt try in in my setup, but its a good practice
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Step-4: Disbale redis, so that no other service can start it later. Because we want to rename the redis service to redis@6379 and redis@6380. So default redis is not needed.
+======================================================================
+
+> systemctl disable redis >/dev/null 2>&1
+
+Step-5: Create a new redis service file named redis@.service in /etc/systemd/system
+======================================================================
+> cat > /etc/systemd/system/redis@.service <<END
+[Unit]
+Description=Redis %i
+After=network.target
+OnFailure=service-status-mail@%n.service
+PartOf=redis.target
+
+[Service]
+Type=simple
+User=redis
+Group=redis
+PrivateTmp=true
+PIDFile=/var/run/redis-%i.pid
+ExecStart=/usr/bin/redis-server /etc/redis-%i.conf
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target redis.target
+END
+
+Step-6: Create the redis.target file in /etc/systemd/system which will later create redis.target.wants directory and will holds the symbolic links to the redis@6379.service and redis@6380.service
+============================================================================
+
+> cat > /etc/systemd/system/redis.target <<END
+[Unit]
+Description=Redis start/stop all redis@.service instances
+END
+
+Step-7: Use a script for loop to create the two redis instances 6379 and 6380. However, you can create multiple redis instances too.
+============================================================================
+> for REDISPORT in 6379 6380
+do
+mkdir -p /var/lib/redis-${REDISPORT}
+chmod 777 /var/lib/redis-${REDISPORT}
+chown redis /var/lib/redis-${REDISPORT}
+cp -rf /etc/redis.conf /etc/redis-${REDISPORT}.conf
+chmod 666 /etc/redis-${REDISPORT}.conf
+sed -i "s/^bind 127.0.0.1.*/bind 127.0.0.1/"  /etc/redis-${REDISPORT}.conf
+sed -i "s/# unixsocket \/tmp\/redis.sock/unixsocket \/var\/redis\/redis-${REDISPORT}.sock/" /etc/redis-${REDISPORT}.conf
+sed -i "s/# unixsocketperm 700/unixsocketperm 777/" /etc/redis-${REDISPORT}.conf
+sed -i "s/stop-writes-on-bgsave-error yes/stop-writes-on-bgsave-error no/" /etc/redis-${REDISPORT}.conf
+sed -i "s/# maxmemory-policy noeviction/maxmemory-policy volatile-lru/" /etc/redis-${REDISPORT}.conf
+sed -i "s/^dir.*/dir \/var\/lib\/redis-${REDISPORT}\//"  /etc/redis-${REDISPORT}.conf
+sed -i "s/^logfile.*/logfile \/var\/log\/redis\/redis-${REDISPORT}.log/"  /etc/redis-${REDISPORT}.conf
+sed -i "s/^pidfile.*/pidfile \/var\/run\/redis-${REDISPORT}.pid/"  /etc/redis-${REDISPORT}.conf
+sed -i "s/^port.*/port ${REDISPORT}/" /etc/redis-${REDISPORT}.conf
+sed -i "s/dump.rdb/dump-${REDISPORT}.rdb/" /etc/redis-${REDISPORT}.conf
+done
+
+Features Here
+~~~~~~~~~~~~~
+(a) Make a directory /var/lib/redis-6379
+(b) chmod it to 777  /var/lib/redis-6379
+(c) make sure it is owned by redis:redis or redis:root 
+(d) Copy the default redis config file /etc/redis.conf as /etc/redis-6379.conf
+(e) Change its access mode to 666
+(f) Edit the following lines in the /etc/redis-6379.conf 
+    -------------------
+    (1) Bind Address: bind 127.0.0.1
+    (2) Unixsocket, not tcp for better performance: 
+    unixsocket /var/redis/redis-6379.sock
+    unixsocketperm 777
+    (3) Let the redis run as usual
+    stop-writes-on-bgsave-error no       #--> This will let the redis to work as usual, even if there are some issues in the disk
+    (4) Set the maximum memory policy 
+    maxmemory-policy volatile-lru
+    (5) Set the redis-6379 directory into the /var/lib 
+    dir /var/lib/redis-6379/             #---> this must be a directory, never ommit the last /
+    (6) Specify the redis logfile
+    logfile /var/log/redis/redis-6379.log
+    (7) Specify the redis process id file
+    pidfile /var/run/redis-6379.pid
+    (8) Specify the redis port
+    port 6379
+    (9) Specify the filename where to dump the DB
+    dbfilename dump-6379.rdb
+    
+Step-8: Change ownership to redis:redis, daemon-reload and redis@6379 and redis@6380 service enabling
+===========================================================================
+> mkdir -p /var/redis/ && usermod -g redis redis && chown -R redis:redis /var/redis
+> systemctl daemon-reload
+> systemctl enable redis@6379 
+> systemctl enable redis@6380 
+> ls -lh /var/redis         #---> Initially you will not find anything here, but later it will show you the sock files
+----------------
+srwxrwxrwx 1 redis redis 0 Feb 21 16:42 redis-6379.sock
+srwxrwxrwx 1 redis redis 0 Feb 21 16:42 redis-6380.sock
+----------------
+**** Here 's' means --> local socket file
+
+Step-9: Start the redis.target service
+=======================================
+> systemctl start redis.target
+
+Step-10: Restart the redis@6379 and redis@6380 service
+======================================================
+> systemctl restart redis@6379.service
+> systemctl restart redis@6380.service
+
+
+Step-11: Check whether the redis instances are running or not
+> systemctl status redis@6379.service
+> systemctl status redis@6380.service
+------------------------------------
+● redis@6379.service - Redis 6379
+   Loaded: loaded (/etc/systemd/system/redis@.service; enabled; vendor preset: disabled)
+   Active: active (running) since Fri 2020-02-21 16:42:06 UTC; 23h ago
+ Main PID: 1005 (redis-server)
+   CGroup: /system.slice/system-redis.slice/redis@6379.service
+           └─1005 /usr/bin/redis-server 127.0.0.1:6379
+
+Feb 21 16:42:06 lab1.harriswebworks.com systemd[1]: Started Redis 6379.
+------------------------------------
+
+> cat /var/log/redis/redis-6379.log 
+> cat /var/log/redis/redis-6380.log 
+> cat /var/log/redis/redis-6380.log 
+
+----------------------------------------------------------------------------
+           _.-``__ ''-._                                             
+      _.-``    `.  `_.  ''-._           Redis 3.2.12 (00000000/0) 64 bit
+  .-`` .-```.  ```\/    _.,_ ''-._                                   
+ (    '      ,       .-`  | `,    )     Running in standalone mode
+ |`-._`-...-` __...-.``-._|'` _.-'|     Port: 6379
+ |    `-._   `._    /     _.-'    |     PID: 1005
+  `-._    `-._  `-./  _.-'    _.-'                                   
+ |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+ |    `-._`-._        _.-'_.-'    |           http://redis.io        
+  `-._    `-._`-.__.-'_.-'    _.-'                                   
+ |`-._`-._    `-.__.-'    _.-'_.-'|                                  
+ |    `-._`-._        _.-'_.-'    |                                  
+  `-._    `-._`-.__.-'_.-'    _.-'                                   
+      `-._    `-.__.-'    _.-'                                       
+          `-._        _.-'                                           
+              `-.__.-'         
+994:M 21 Feb 16:41:50.993 # WARNING: The TCP backlog setting of 511 cannot be enforced because /proc/sys/net/core/somaxconn is set to the lower value of 128.
+994:M 21 Feb 16:41:50.993 # Server started, Redis version 3.2.12
+994:M 21 Feb 16:41:50.993 * The server is now ready to accept connections on port 6379
+994:M 21 Feb 16:41:50.993 * The server is now ready to accept connections at /var/redis/redis-6379.sock
+994:signal-handler (1582303326) Received SIGTERM scheduling shutdown...
+994:M 21 Feb 16:42:06.331 # User requested shutdown...
+994:M 21 Feb 16:42:06.331 * Saving the final RDB snapshot before exiting.
+994:M 21 Feb 16:42:06.333 * DB saved on disk
+994:M 21 Feb 16:42:06.333 * Removing the pid file.
+994:M 21 Feb 16:42:06.333 * Removing the unix socket file.
+994:M 21 Feb 16:42:06.333 # Redis is now ready to exit, bye bye...
+1005:M 21 Feb 16:42:06.344 # You requested maxclients of 10000 requiring at least 10032 max file descriptors.
+1005:M 21 Feb 16:42:06.344 # Server can't set maximum open files to 10032 because of OS error: Operation not permitted.
+1005:M 21 Feb 16:42:06.344 # Current maximum open files is 4096. maxclients has been reduced to 4064 to compensate for low ulimit. If you need higher maxclients increase 'ulimit -n'.
+------------------------------------------------------------------------------
+
+    
+
+
+
+
+

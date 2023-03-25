@@ -1,0 +1,104 @@
+
+*********Before reading this please read the why redis.target? 
+
+Scenario: How the redis.target restarting let the system lost some of its CSS features
+-----------------------------------------------------------------------------
+
+Last night 21 Feb, 2020 I was trying to set two redis server instance in my hww_cluster_pub1 instance in NV. 
+But when I was trying the redis setup commands, mistakenly I exxecuted the below command in the live server of AccuStandard in NV
+> systmctl start redis.target
+
+Then I rushed to visit the site accustandard.com and found the following issues:
+(i) No Banner in the site
+(ii) Some nav bars are gone
+(iii) But product page is accessible and rest of the operations were ok.
+
+I was little worried of what really has happend and how this could be solved.
+And I didnt find any solution of it.
+
+Basic information on redis.target
+=================================
+Location of redis.target: /etc/systemd/system/redis.target
+# this is not a system generated .target file
+# This is the .target file that I have generated while setup the multiple redis instances in my server
+
+
+Major Investigation on the issue
+--------------------------------
+> Banner Missing
+> Some nav vars are missing
+----> means there may be a problem related to the JavaScript and the bootstrap and some packages are missing due to the restart of the redis.target service
+
+************ Problem is JAVASCRIPT Package missing************************
+
+Solution:
+---------
+* NPM is a package manager which deals with all the related dependencies 
+
+@Container 101
+===============
+Step-1: Deep Drive in the Magento2 home directory
+-------------------------------------------------
+> cd /home/accustandard/public_html/
+
+Step-2: Install the necessary missing packages which was causing the problem using NPM package manager
+----------------------------------------------------------------------------
+> npm install
+> npm audit fix  
+> npm install ajv --save
+> npm audit fix
+> npm run build
+> npm install bootstrap
+> npm install scss-powertools --save-dev
+> npm audit fix
+> npm update
+> npm install jquery --save-dev
+> npm install popper.js --save-dev
+> npm install xlsx --save-dev
+
+Step-3: Make sure the user:group ownership is accustandard:accustandar
+----------------------------------------------------------------------
+> chown -R accustandard:accustandard *
+
+Step-4: cd to the node_modules and change the directory chmod to 777 and file mode to 666 and again change all owenership to accustandard:accustandard (Recursively)
+--------------------------------------------------------------------------
+> cd node_modules/
+> find . -type d -exec chmod 777 {} \; && find . -type f -exec chmod 666 {} \; &&  chown -R accustandard:accustandard *
+> exit          #-----> exit from the Container 101
+
+@into Container 101
+-------------------
+Step-5: cd to the /var/log and check how OOM- Out Of Memory has killed some of the processes in the container, which results in system abnormal behavior or down
+-------------------------------------------------------------------------
+> cd /var/log
+> grep -i oom messages
+------------------------------------Output-----------------------------------------------------------------------------------
+Feb 17 01:03:16 accum2-nv kernel: OOM killed process 398 (redis-server) total-vm:6980968kB, anon-rss:4014828kB, file-rss:4kB
+Feb 17 08:11:07 accum2-nv kernel: OOM killed process 8770 (redis-server) total-vm:5004648kB, anon-rss:3781192kB, file-rss:92kB
+Feb 17 08:18:23 accum2-nv kernel: OOM killed process 14551 (redis-server) total-vm:5004648kB, anon-rss:3765988kB, file-rss:500kB
+Feb 17 08:19:06 accum2-nv kernel: OOM killed process 15390 (redis-server) total-vm:5004648kB, anon-rss:3731444kB, file-rss:476kB
+Feb 19 09:18:10 accum2-nv kernel: OOM killed process 27987 (redis-server) total-vm:5014888kB, anon-rss:3898596kB, file-rss:4kB
+Feb 19 09:55:32 accum2-nv kernel: OOM killed process 3667 (redis-server) total-vm:5014888kB, anon-rss:3893064kB, file-rss:184kB
+Feb 19 09:56:05 accum2-nv kernel: OOM killed process 5299 (redis-server) total-vm:5014888kB, anon-rss:3846960kB, file-rss:384kB
+Feb 19 09:57:24 accum2-nv kernel: OOM killed process 5349 (redis-server) total-vm:5014888kB, anon-rss:3857368kB, file-rss:384kB
+Feb 19 09:58:02 accum2-nv kernel: OOM killed process 5379 (redis-server) total-vm:5014888kB, anon-rss:3850088kB, file-rss:364kB
+Feb 19 09:59:48 accum2-nv kernel: OOM killed process 5409 (redis-server) total-vm:5014888kB, anon-rss:3858852kB, file-rss:384kB
+Feb 19 10:03:36 accum2-nv kernel: OOM killed process 5462 (redis-server) total-vm:5014888kB, anon-rss:3869796kB, file-rss:372kB
+Feb 19 10:18:10 accum2-nv kernel: OOM killed process 5664 (redis-server) total-vm:5015024kB, anon-rss:3846424kB, file-rss:348kB
+Feb 19 10:24:21 accum2-nv kernel: OOM killed process 5592 (redis-server) total-vm:5014888kB, anon-rss:3850048kB, file-rss:516kB
+Feb 19 10:25:25 accum2-nv kernel: OOM killed process 6114 (redis-server) total-vm:5014888kB, anon-rss:3850924kB, file-rss:512kB
+Feb 19 10:30:46 accum2-nv kernel: OOM killed process 6149 (redis-server) total-vm:5004648kB, anon-rss:3854700kB, file-rss:512kB
+Feb 19 10:31:43 accum2-nv kernel: OOM killed process 6218 (redis-server) total-vm:5014888kB, anon-rss:3850324kB, file-rss:512kB
+Feb 19 10:42:46 accum2-nv kernel: OOM killed process 6293 (redis-server) total-vm:5004788kB, anon-rss:3852928kB, file-rss:228kB
+Feb 19 10:42:46 accum2-nv kernel: OOM killed process 6303 (redis-server) total-vm:5004648kB, anon-rss:3855048kB, file-rss:32kB
+Feb 19 10:42:46 accum2-nv kernel: OOM killed process 6258 (redis-server) total-vm:5004648kB, anon-rss:3855048kB, file-rss:564kB
+Feb 19 10:48:03 accum2-nv kernel: OOM killed process 6621 (redis-server) total-vm:5014888kB, anon-rss:3855348kB, file-rss:552kB
+Feb 19 12:44:00 accum2-nv kernel: OOM killed process 807 (controller) total-vm:72140kB, anon-rss:664kB, file-rss:8kB
+Feb 19 12:44:00 accum2-nv kernel: OOM killed process 388 (java) total-vm:8100432kB, anon-rss:1489532kB, file-rss:0kB
+Feb 19 12:44:18 accum2-nv kernel: OOM killed process 818 (mysqld) total-vm:7277376kB, anon-rss:1367216kB, file-rss:0kB
+Feb 19 12:44:18 accum2-nv kernel: OOM killed process 724 (httpd) total-vm:3422484kB, anon-rss:293148kB, file-rss:0kB
+------------------------------------------------------------------------------------------------------------------------------
+
+
+
+

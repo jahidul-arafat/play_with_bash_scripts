@@ -1,0 +1,40 @@
+On Feb 7, 2020 at around 4.00 PM BD time, the accustandard.com suddenly goes down.
+Mr. Faisal and Mr. Rafiq informed me the matter and I tried to see, what has happened.
+
+Aften then the system goes down several times in the last 4 hours (BD time: 4pm-8pm). So the major concern was what is the key behind this problem and how to trace that and solve it.
+
+
+Error-1:
+--------
+> tail -n 50 /home/accustandard/public_html/var/log/php-fpm-error.log 
+
+
+[07-Feb-2020 11:58:15 UTC] PHP Fatal error:  Uncaught RedisException: LOADING Redis is loading the dataset in memory in /home/accustandard/public_html/vendor/colinmollenhour/credis/Client.php:1139
+Stack trace:
+#0 /home/accustandard/public_html/vendor/colinmollenhour/credis/Client.php(1139): Redis->hGet('zc:k:d7b_GLOBAL...', 'd')
+#1 /home/accustandard/public_html/vendor/colinmollenhour/cache-backend-redis/Cm/Cache/Backend/Redis.php(461): Credis_Client->__call('hget', Array)
+#2 /home/accustandard/public_html/vendor/magento/zendframework1/library/Zend/Cache/Core.php(306): Cm_Cache_Backend_Redis->load('d7b_GLOBAL__DIC...', false)
+#3 /home/accustandard/public_html/vendor/magento/framework/Cache/Frontend/Adapter/Zend.php(55): Zend_Cache_Core->load('d7b_GLOBAL__DIC...')
+#4 /home/accustandard/public_html/vendor/magento/framework/Cache/Frontend/Decorator/Bare.php(65): Magento\Framework\Cache\Frontend\Adapter\Zend->load('global::DiConfi...')
+#5 /home/accustandard/public_html/vendor/magento/framework/Cache/Frontend/Decorator/Bare.php(65): Magento\Framework\Cache\F in /home/accustandard/public_html/vendor/colinmollenhour/credis/Client.php on line 1157
+
+Error-2:
+--------
+> tail -n 10 /home/accustandard/logs/error_log
+[Fri Feb 07 06:46:34.866783 2020] [proxy_fcgi:error] [pid 5963:tid 140530444404480] (70007)The timeout specified has expired: [client 191.209.10.91:63036] AH01075: Error dispatching request to : (polling), referer: https://www.accustandard.com/heptenophos-p-547n.html
+[Fri Feb 07 06:46:34.866820 2020] [proxy_fcgi:error] [pid 32241:tid 140530452797184] (70007)The timeout specified has expired: [client 41.242.137.58:10880] AH01075: Error dispatching request to : (polling), referer: https://www.accustandard.com/serviceworker.js
+[Fri Feb 07 06:46:34.866819 2020] [proxy_fcgi:error] [pid 5963:tid 140530268157696] (70007)The timeout specified has expired: [client 191.209.10.91:63036] AH01075: Error dispatching request to : (polling), referer: https://www.accustandard.com/heptenophos-p-547n.html
+[Fri Feb 07 06:51:04.120719 2020] [proxy_fcgi:error] [pid 6744:tid 140530088392448] (70007)The timeout specified has expired: [client 193.29.13.32:40984] AH01075: Error dispatching request to : (polling)
+
+Error-3:
+--------
+> cat /var/log/redis/redis-6379.log
+------------------------ Snippet where the Redis Server was failed (BEGIN)---------------------------------------
+4028:C 07 Feb 2020 08:47:44.428 # Redis version=5.0.7, bits=64, commit=00000000, modified=0, pid=4028, just started
+4028:C 07 Feb 2020 08:47:44.428 # Configuration loaded
+4028:M 07 Feb 2020 08:47:44.429 # You requested maxclients of 10000 requiring at least 10032 max file descriptors.
+4028:M 07 Feb 2020 08:47:44.429 # Server can't set maximum open files to 10032 because of OS error: Operation not permitted.
+4028:M 07 Feb 2020 08:47:44.429 # Current maximum open files is 4096. maxclients has been reduced to 4064 to compensate for low ulimit. If you need higher maxclients increase 'ulimit -n'.
+------------------------ Snippet where the Redis Server was failed (END)---------------------------------------
+
+

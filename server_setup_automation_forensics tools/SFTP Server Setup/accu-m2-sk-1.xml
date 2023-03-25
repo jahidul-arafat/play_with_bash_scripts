@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FileZilla3 version="3.28.0" platform="*nix">
+	<Servers>
+		<Server>
+			<Host>15.165.104.212</Host>
+			<Port>6666</Port>
+			<Protocol>1</Protocol>
+			<Type>0</Type>
+			<User>accustandard</User>
+			<Pass encoding="base64">QTJyZ1hIJXZCI2IvPVopPg==</Pass>
+			<Logontype>1</Logontype>
+			<TimezoneOffset>0</TimezoneOffset>
+			<PasvMode>MODE_DEFAULT</PasvMode>
+			<MaximumMultipleConnections>0</MaximumMultipleConnections>
+			<EncodingType>Auto</EncodingType>
+			<BypassProxy>0</BypassProxy>
+			<Name>accu-m2-sk-1</Name>
+			<Comments />
+			<Colour>5</Colour>
+			<LocalDir />
+			<RemoteDir />
+			<SyncBrowsing>0</SyncBrowsing>
+			<DirectoryComparison>0</DirectoryComparison>
+		</Server>
+	</Servers>
+</FileZilla3>

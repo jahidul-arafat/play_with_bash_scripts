@@ -1,0 +1,282 @@
+  346  ls -al public_html/ignore
+  347  cat public_html/app/etc/env.php 
+  348  mysql -u accu_user -p 
+  349  mysqldump -u accu_user -p accu_catalog > accu_catalog_20200330.sql
+  350  ls -al
+  351  exit
+  352  cd public_html/
+  353  grep -rnw . -e 'DebugToolbar'
+  354  history
+  355  history | grep 'autoload'
+  356  grep -rnw . -e 'DebugToolbar'
+  357  clear
+  358  cat app/etc/env.php 
+  359  crontab -l
+  360  cd public_html/
+  361  bin/magento config:show dev/static/sign
+  362  cat public_html/app/etc/config.php | grep modules_disable_output
+  363  cd public_html/
+  364  cat .gitignore 
+  365  cat app/etc/vendor_path.php
+  366  git log
+  367  git status
+  368  git diff app/code/Harriswebworks/AccuCustom/etc/di.xml
+  369  redis-cli -p REDIS_PORT -h REDIS_HOST info | egrep --color "(role|used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+  370  cat public_html/app/etc/env.php 
+  371  redis-cli -p 0 -h /var/redis/redis-6380.sock info | egrep --color "(role|used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+  372  clear
+  373  cat public_html/app/etc/env.php 
+  374  redis-cli monitor
+  375  exit
+  376  history
+  377  redis-cli -p REDIS_PORT -h REDIS_HOST info | egrep --color "(role|used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+  378  redis-cli -p 6379 -h localhost info | egrep --color "(role|used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+  379  redis-cli -p 6380 -h localhost info | egrep --color "(role|used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+  380  redis-cli -p 6381 -h localhost info | egrep --color "(role|used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+  381  exit
+  382  redis-cli -p 6379 -h localhost info | egrep --color "(role
+  383  |used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+  384  histroy
+  385  history
+  386  redis-cli -p 6379 -h localhost info | egrep --color "(role|used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+  387  redis-cli -p 6380 -h localhost info | egrep --color "(role|used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+  388  exit
+  389  cd public_html/
+  390  history
+  391  git log
+  392  cat app/etc/vendor_path.php
+  393  m2-cc
+  394  ps auwx
+  395  cd ..
+  396  tail -n 5000 logs/access_log > last5000.txt
+  397  tail -n 10000 logs/access_log > last10000.txt
+  398  tail -n 20000 logs/access_log > last20000.txt
+  399  ps auwx
+  400  clear
+  401  redis-cli --stat
+  402  redis-cli
+  403  redis-cli
+  404  cat public_html/app/etc/env.php 
+  405  cat public_html/app/etc/env.php  | grep redis
+  406  redis-cli -p 6381
+  407  redis-cli 
+  408  redis-cli -p 6381
+  409  cd public_html/var/log
+  410  ls -al
+  411  tail debug.log -100
+  412  tail debug.log n 100
+  413  tail debug.log -n 100
+  414  ls -t
+  415  ls -alt
+  416  tail -n 100 cron.log
+  417  tail -n 100 support_report.log
+  418  cd ..
+  419  cd ..
+  420  bin/magento indexer:reindex
+  421  redis-cli 
+  422  TTL d7b_UI_COMPONENT_CONFIGURATION_DATA_WIDGET_RECENTLY_VIEWED
+  423  redis-cli
+  424  redis-cli
+  425  history
+  426  m2-index
+  427  history |grep index
+  428   php ./bin/magento indexer:reindex catalogsearch_fulltext  elasticsuite_categories_fulltext cassynonyms_components_fulltext elasticsuite_thesaurus
+  429  m2 indexer:status
+  430  m2 indexer:reset catalogsearch_fulltext
+  431   php ./bin/magento indexer:reindex catalogsearch_fulltext  elasticsuite_categories_fulltext cassynonyms_components_fulltext elasticsuite_thesaurus
+  432  cd public_html/
+  433  cat var/report/a5ca58e1d2e2889ed9285689b54a591220851df4eabef717236eb4dba363d8d4
+
+
+
+---
+ps aux|grep elastic
+  300  ps aux|grep elasticsearch
+  301  systemctl status elasticsearch
+  302  ps aux|grep elastic
+  303  free
+  304  clear
+  305  exit
+  306  history
+  307  clear
+  308  cd /var/log/
+  309  ls
+  310  cd redis/
+  311  ls
+  312  cd ..
+  313  ls
+  314  tail -n 20 php-fpm/error.log
+  315  cd php-fpm/
+  316  ls
+  317  cat error.log
+  318  cat error.log-20200315
+  319  clear
+  320  ls
+  321  cat error.log-20200405 
+  322  cd ..
+  323  ls
+  324  cat /etc/systemd/system/redis.target
+  325  cat /etc/systemd/system/redis.target.wants/redis\@6379.service 
+  326  cd /etc/systemd/system
+  327  ls
+  328  ls -la
+  329  cat redis@.service
+  330  cd redis.target.wants/
+  331  ls
+  332  cat redis@6379.service
+  333  cd ..
+  334  cat /etc/systemd/system/redis.target
+  335  cat redis@.service
+  336  clear
+  337  cd /var/log
+  338  grep -i oom messages
+  339  ls
+  340  cat messages
+  341  clar
+  342  clear
+  343  find / -name access.log
+  344  find / -name error.log
+  345  find / -name access
+  346  su accustandard
+  347  su - accustandard
+  348  clear
+  349  cat /var/log/redis/redis-6379.log
+  350  cat /var/log/redis/redis-6379.log|grep 01 Apr 2020
+  351  cat /var/log/redis/redis-6379.log|grep '01 Apr 2020'
+  352  head -n 20 /var/log/redis/redis-6379.log
+  353  ls
+  354  cd redis/
+  355  ls
+  356  cat redis-6380.log
+  357  clear
+  358  vi /etc/security/limits.conf 
+  359  vi /etc/systemd/system/redis@.service
+  360  ls
+  361  cd
+  362  cd /etc/systemd/system/
+  363  ls
+  364  cd redis.target.wants/
+  365  ls
+  366  vi redis@6379.service
+  367  redis-cli -p 6379 info server | egrep "process_id|tcp_port|config_file"
+  368  redis-cli -p 6379 -h localhost info | egrep --color "(role
+  369  |used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+  370  su - accustandard
+  371  cd
+  372  su - accustandard
+  373  exit
+  374  cd /home
+  375  cd accu
+  376  dir
+  377  cd accustandard/
+  378  cd logs
+  379  dir
+  380  tail access_log 
+  381  mysql -uroot -p
+  382  dir
+  383  ps auwx
+  384  service mysqld restart
+  385  ps auwx
+  386  redis-cli
+  387  ps auwx
+  388  redis-cli
+  389  ps auwx
+  390  ps auwx
+  391  redis-cli -p6381
+  392  redis-cli -p 6381
+  393  ps auwx
+  394  free g
+  395  free m
+  396  free -m
+  397  free -g
+  398  systemctl -p
+  399  systemctl --p
+  400  exit
+  401  dmesg
+  402  exit
+  403  ps auwx
+  404  exit
+  405  ps auwx
+  406  free -m
+  407  free -m
+  408  service mysqld restart
+  409  ps auwx
+  410  ps auwx
+  411  ps auwx
+  412  ps auwx
+  413  ps auwx
+  414  ps auwx
+  415  redis -v
+  416  yum list installed
+  417  mysql -v
+  418  free -m
+  419  ps auwx
+  420  crontab -e
+  421   perl /usr/local/bin/mysqltuner
+  422  ps auwx
+  423  exit
+  424  ps auwx
+  425  yum install  gzip
+  426  yum install lsof
+  427  magerun
+  428  lsof
+  429  lsof -v
+  430  lsof -i
+  431  lsof -i
+  432  lsof -i
+  433  ps auwx
+  434  lsof -p 6677
+  435  lsof -p 6628
+  436  ps auwx
+  437  lsof -p 6646
+  438  which lsof
+  439  ps auwx
+  440  service redis@6379 restart
+  441  ps auwx
+  442  redis-cli -p 6379
+  443  yum update
+  444   yum --enablerepo=percona-release-noarch clean metadata
+  445  yum update
+  446  yum update ImageMagick* composer python2-josepy
+  447   yum --enablerepo=percona-release-noarch clean metadata
+  448  yum update
+  449  yum install applydeltarpm
+  450  yum install deltarpm
+  451  yum update
+  452  yum reinstall percona-release-noarch
+  453  yum reinstall percona-release
+  454  percona-release setup ps80
+  455  yum update
+  456   yum --enablerepo=percona-release-noarch clean metadata
+  457  yum repolist
+  458  yum update
+  459  yum list installed
+  460  yum update percona-release
+  461   yum --enablerepo=percona-release-noarch update Percona-Server*
+  462  yum update Percona-Server*
+  463  yum repolist
+  464  ps auwx
+  465  redis-cli -p 6379
+  466  free -m
+  467  ps auwx
+  468  exit
+  469  crontab -e
+  470   perl /usr/local/bin/mysqltuner
+  471  history|grep lsof
+  472  ps auwx
+  473  lsof -p 12245
+  474  ps auwx
+  475  lsof -p 19229
+  476  REPO_HWW="http://m2testbox.harriswebworks.com"
+  477  wget -O /usr/share/phpMyAdmin/.htaccess ${REPO_HWW}/mydb/htaccess
+  478  exit
+  479  crontab -e
+  480  exit
+  481  ps auwx
+  482  exit
+  483  crontab -l
+  484  clear
+  485  history
+  486  su - accustandard
+  487  cd /home/accustandard/
+  488  cat public_html/app/etc/env.php 

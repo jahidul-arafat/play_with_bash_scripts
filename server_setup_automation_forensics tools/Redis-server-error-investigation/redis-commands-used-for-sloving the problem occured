@@ -1,0 +1,132 @@
+link: 
+1. https://redis.io/topics/rediscli
+2. https://www.shellhacks.com/redis-delete-all-keys-redis-cli/
+3. https://www.digitalocean.com/community/tutorials/how-to-find-redis-logs-on-ubuntu
+
+
+PART-1: Check whether the redis server is running or not
+-------------------------------------------------------
+The accustanrd has 02 redis server setup, 
+6379 --> its overloaded here, holding the data and others, average connections 6600+
+6380 --> is only handling the session data, average conenctions 11+
+
+> systemctl status redis            --> is not running, its not a problem, we dont want the default redis to run here
+> systemctl status redis@6379       --> running 
+> systemctl status redis@6380       --> running
+
+PART-2: Testing using redis-cli
+--------------------------------
+1. Checking the redis is ok or not
+> ps -eo comm,etime,user|grep redis
+
+If it returns somethig, the redis server is running ok, else not
+
+2. Testing the redis rechability
+root@accustandard-nv] /> redis-cli
+127.0.0.1:6379> multi
+OK
+127.0.0.1:6379> ping 
+QUEUED
+127.0.0.1:6379> 
+
+
+3. Check the redis stat
+
+> redis-cli --stat  # to check the coonections and memory used by redis at the current state
+> redis-cli -h localhost -p 6379 --stat
+> redis-cli -h localhost -p 6380 --stat # its holding the session data only
+
+4. Check the redis operation using redis monitor
+> redis-cli monitor   # it will show you the pages its caching
+
+5. Check the least 10 keys in the redis server now, it will help you to find out which key may lead to the problem
+> redis-cli --scan|head -10
+
+5. Check the redis bigkey and the number of keys out there and the spaces it is occupying 
+> redis-cli --bigkeys
+
+6. Flush the redis server
+> redics-cli FLUSHALL
+
+
+
+PART-3: Investigate the redis log to figure out where this problem has occured and how we have solved it
+--------------------------------------------------------------------------------------------------------
+link: 
+https://coderwall.com/p/j5osrg/when-redis-can-t-set-maximum-open-files
+
+
+1. Redis is giving the following problem 
+> cat /var/log/redis/redis-6379.log
+> cat /var/log/redis/redis-6380.log
+
+Here, look for the followings:
+------------------------------
+---> when your server was down, time/date
+---> Whether the system can set the maximum openfile to 10032 (max), we can update this to 20064
+---> Check the ulimit -n and whether the log is suggesting anything
+
+------------------------ Snippet where the Redis Server was failed (BEGIN)---------------------------------------
+4028:C 07 Feb 2020 08:47:44.428 # Redis version=5.0.7, bits=64, commit=00000000, modified=0, pid=4028, just started
+4028:C 07 Feb 2020 08:47:44.428 # Configuration loaded
+4028:M 07 Feb 2020 08:47:44.429 # You requested maxclients of 10000 requiring at least 10032 max file descriptors.
+4028:M 07 Feb 2020 08:47:44.429 # Server can't set maximum open files to 10032 because of OS error: Operation not permitted.
+4028:M 07 Feb 2020 08:47:44.429 # Current maximum open files is 4096. maxclients has been reduced to 4064 to compensate for low ulimit. If you need higher maxclients increase 'ulimit -n'.
+------------------------ Snippet where the Redis Server was failed (END)---------------------------------------
+
+Solution
+~~~~~~~~
+Step-1a: Set the ulimit to
+> vim /etc/security/limits.conf 
+# End of file
+*         soft    nofile          700000
+*         hard    nofile          1000000
+
+Step-1b: Modify the /etc/systemd/system/redis@.service as below
+> vim /etc/systemd/system/redis@.service
+ULIMIT=20064 # u can also set it as 10032
+
+Step-1c: restart the redis now
+> systemctl restart redis@6379
+
+Step-1d: Check the redis log again to figure out the earlier errors are happened again or not
+> cat /var/log/redis/redis-6379.log  # if no errors are logged after the restart, then everything is alright
+
+
+Step-2: Testing Connectivity to Redis Server
+--------------------------------------------
+> redis-cli -p 6379 info server | egrep "process_id|tcp_port|config_file"
+> redis-cli   # default port 6379
+---------------
+127.0.0.1:6379> client list
+id=6 addr=127.0.0.1:58146 fd=6 name= age=9 idle=0 flags=N db=0 sub=0 psub=0 multi=-1 qbuf=0 qbuf-free=32768 obl=0 oll=0 omem=0 events=r cmd=client
+----------------
+
+> redis-cli -p 6380
+------------------
+127.0.0.1:6380> client list
+id=2 addr=127.0.0.1:51704 fd=6 name= age=4 idle=0 flags=N db=0 sub=0 psub=0 multi=-1 qbuf=0 qbuf-free=32768 obl=0 oll=0 omem=0 events=r cmd=client
+------------------
+
+# Check Redis mem usage (by sazzad vai)
+--------------------------------------
+
+redis-cli -p 6379 -h localhost info | egrep --color "(role|used_memory_peak|maxmemory|evicted_keys|uptime_in_days)"
+
+Output
+------
+uptime_in_days:0
+used_memory_peak:247409760
+used_memory_peak_human:235.95M
+used_memory_peak_perc:99.95%
+maxmemory:4294967296
+maxmemory_human:4.00G
+maxmemory_policy:volatile-lru
+evicted_keys:0
+role:master
+
+
+> redis-cli
+    > CONFIG GET *
+    > CONFIG GET "maxmemory"
+    > CONFIG GET "dbfilename"

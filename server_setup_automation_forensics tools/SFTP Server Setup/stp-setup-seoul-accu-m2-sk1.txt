@@ -1,0 +1,190 @@
+https://linuxize.com/post/how-to-stop-and-disable-firewalld-on-centos-7/
+https://linuxacademy.com/guide/11630-internal-port-forwarding-on-linux-using-the-firewall/
+
+Date: 18 Feb, 2020
+Task: Is to Setup the Accu-M2-Sk-1 server at Seoul
+--------------------------------------------------
+(1) Take an EC2 Instance at Seoul with the following configuration
+    > Key: HWW-Seoul.pem
+    > Instance Type: m4.xlarge
+    > volume: 500 GB (V.Type: gp2, IOPS: 1500)
+    > Availability Zone: ap-northeast-2a
+    > Private IPS (3X=1X for Main server+2X for the containers): 172.31.1.128, 172.31.3.71, 172.31.1.86
+    > Elastic IPS (3X=1X for Main server+2X for the containers): 15.164.114.211*, 15.165.104.212, 15.164.143.101
+    
+    > Networking (IP Associations): 
+    Private IP	     Public IP	
+    ----------------------------------------------
+    172.31.1.128	 15.164.114.211		            -----> Main EC2 Instance
+    172.31.3.71      15.165.104.212      Unassign	-----> Container 101
+    172.31.1.86      15.164.143.101      Unassign	-----> Container 102
+    ----------------------------------------------
+    
+    > Security Group: 
+        Group Name: CentOS 7 -x86_64- - with Updates HVM-1901_01-AutogenByAWSMP-.
+        Inbound Rules:
+        -------------
+        Type                    Protocol            Port Range                      Source  
+        ---------------------------------------------------------------------------------------
+        HTTP                    TCP                 80                              0.0.0.0/0
+        HTTP                    TCP                 80                              ::/0 (IPV6)
+        Custom TCP Rule         TCP                 6666                            0.0.0.0/0
+        SSH                     TCP                 22                              0.0.0.0/0
+        Custom TCP Rule         TCP                 20 - 21                         0.0.0.0/0
+        Custom TCP Rule         TCP                 7890                            0.0.0.0/0
+        Custom TCP Rule         TCP                 21000 - 21900                   0.0.0.0/0
+        HTTPS                   TCP                 443                             0.0.0.0/0
+        HTTPS                   TCP                 443                             ::/0
+        ---------------------------------------------------------------------------------------
+        
+        Outbound Rules:
+        --------------
+        Type                    Protocol            Port Range                      Source  
+        ---------------------------------------------------------------------------------------
+        All traffic             All                 All                             0.0.0.0/0
+        ---------------------------------------------------------------------------------------
+        
+(2) OpenVZ7 Setup as before
+
+(3) Setup the SFTP server at Sk-Container-101
+
+    @main-172.31.1.128/15.164.114.211
+    =================================
+    (i) sudo vzlist -a
+    CTID      NPROC STATUS    IP_ADDR         HOSTNAME
+    101       25    running   172.31.3.71     accustandard.harriswebworks.com
+    102       26    running   172.31.1.86     accudbsk.harriswebworks.com
+    
+    (ii) Change ssh port and check the following parameters
+    > sudo vim /etc/ssh/sshd_conf
+    ---------------------------------------------------------
+    Port 6666
+    PasswordAuthentication yes
+    X11Forwarding no
+    Subsystem sftp  /usr/libexec/openssh/sftp-server -l INFO
+    ---------------------------------------------------------
+    :wq
+    > sudo semanage port -a -t ssh_port_t -p tcp 6666
+    > sudo semanage port -l|grep ssh 
+    ---------------------------------------------------------
+    ssh_port_t                     tcp      6666, 22
+    ---------------------------------------------------------
+    > sudo systemctl restart sshd
+    > sudo systemctl status sshd
+    
+    (iii) Make sure no internal firewalld is running in it, if so, then it may conflict with the AWS EC2 Security Group Policy. You must have to stop,disable and mask the firewalld if it is in running state
+    > sudo systemctl status firewalld
+    Return: Unit firewalld.service could not be found.      ----> Thats good, go ahead.
+    
+    
+    
+    @101-172.31.3.71/15.165.104.212
+    ===============================
+    (i) Change the ssh port and check the following parameters
+        > sudo vim /etc/ssh/sshd_conf
+    ---------------------------------------------------------
+    Port 6666
+    PasswordAuthentication yes
+    X11Forwarding no
+    Subsystem sftp  /usr/libexec/openssh/sftp-server -l INFO
+    ---------------------------------------------------------
+    :wq
+    
+        > sudo semanage port -a -t ssh_port_t -p tcp 6666
+        > sudo semanage port -l|grep ssh 
+        ---------------------------------------------------------
+        ssh_port_t                     tcp      6666, 22
+        ---------------------------------------------------------
+        > sudo systemctl restart sshd
+        > sudo systemctl status sshd
+    
+    (ii) Check the firewalld, make sure its not running, else stop,disable and mask it.
+        > sudo firewall-cmd --state
+        > sudo systemctl stop firewalld
+        > sudo systemctl disable firewalld
+        > sudo systemctl mask --now firewalld     #---> this will mask it to /dev/null, so that no other services can start it later
+        > sudo systemctl status firewalld
+    
+    
+    (iii) Create an User "accustandard" which will have both the ssh and sftp login 
+    
+    +++++++++++++++++++++++++++++++++++++++ NoTES and Questions (START) ++++++++++++++++++++++++++++++++++++++++++
+    ***** Note: If you modify the /etc/ssh/sshd_conf with 
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            Subsystem sftp    internal-sftp
+            Match User accustandard
+                ForceCommand internal-sftp
+            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    then the user will lose its ssh login compatibility. We dont need this for now. So avoid this setup
+            
+    ***** Question: Whats the difference between sftp-server and internal-sftp
+    
+    https://serverfault.com/questions/660160/openssh-difference-between-internal-sftp-and-sftp-server
+    +++++++++++++++++++++++++++++++++++++++ NoTES and Questions (END) ++++++++++++++++++++++++++++++++++++++++++
+    
+    > useradd accustandard
+    > passwd accustandard               ---> Create ur password using the link: https://passwordsgenerator.net
+    > id accustandard                   #(it should belongs to both Group: accustandard and apache just like the Accu-M2-NV-1)
+    > grep accustandard /etc/passwd     # Check its loging shell "accustandard:x:1000:1000::/home/accustandard:/bin/bash"
+    
+    (iv) Test the sftp login with this user "accustandard" in the following three scenarios
+        @101
+        ====
+        # Scenario-1: at 101, localhost, port 6666
+        > sftp -P 6666 accustandard@localhost   ----> should be successful, will prompt for password
+        
+        # Scenario-2: at 101, container private ip, port 6666
+        > sftp -P 6666 accustandard@172.31.3.71 ----> should be successful, will prompt for password
+        
+        # Scenario-3: @main, sftp to the container private ip, port 6666
+        
+        @main
+        =====
+        > sftp -P 6666 accustandard@172.31.3.71        
+        > sftp -P 6666 accustandard@15.164.114.211
+        **** These will not work if the firewalld is active in the container 101, I have faced trouble here which cost me arounf 2.30 hours to dig out the solution
+        
+        **** Error (Probable, if occured, whould be like below)
+        -------------------------------------------------
+        ssh: connect to host port 6666: No route to host  <--------- This is a firewall problem
+        -------------------------------------------------
+        
+    (v) Now finally Create a sftp xml file
+        # Encode your password using base64 link: https://www.base64encode.org, choose "ENCODE" option
+        
+        ------------------------ accu-m2-sk1.xml (START)-----------------------------------
+        <?xml version="1.0" encoding="UTF-8"?>
+        <FileZilla3 version="3.28.0" platform="*nix">
+            <Servers>
+                <Server>
+                    <Host>15.165.104.212</Host>
+                    <Port>6666</Port>
+                    <Protocol>1</Protocol>
+                    <Type>0</Type>
+                    <User>accustandard</User>
+                    <Pass encoding="base64">QTJyZ1hIJXZCI2IvPVopPg==</Pass>
+                    <Logontype>1</Logontype>
+                    <TimezoneOffset>0</TimezoneOffset>
+                    <PasvMode>MODE_DEFAULT</PasvMode>
+                    <MaximumMultipleConnections>0</MaximumMultipleConnections>
+                    <EncodingType>Auto</EncodingType>
+                    <BypassProxy>0</BypassProxy>
+                    <Name>accu-m2-sk-1</Name>
+                    <Comments />
+                    <Colour>5</Colour>
+                    <LocalDir />
+                    <RemoteDir />
+                    <SyncBrowsing>0</SyncBrowsing>
+                    <DirectoryComparison>0</DirectoryComparison>
+                </Server>
+            </Servers>
+        </FileZilla3>
+        
+
+        ------------------------ accu-m2-sk1.xml (END)-------------------------------------
+        
+    
+    
+        
+    
+        

@@ -1,0 +1,58 @@
+Problem Faced
+------------
+Link: https://soiposervices.com/blog/2016/07/13/restrict-sftp-users-home-directory-share-folders/
+
+The task was to create a accufmdev sftp user having access only to the 
+/home/accustandard/public_html/pub/media/docshare which is owned by accustandard:accustandard.
+
+> I have tested the solution using "ChrootDirectory %h", but everytime I tried with the ChrootDirectroy, I received the following error in the FileZilla Connection:
+Error: "FATAL ERROR: Remote Server unexpectedly closed network connection"
+
+Then I tried the solution in a different way. 
+Instead of using Jail Choot, I used the following procedure
+
+(1) Create user accufmdev
+> useradd accufmdev -s /sbin/nologin
+> passwd accufmdev
+> usermod -aG accustandard accufmdev // add the user into the accustandard group, as the folder we have to be shared in under the accustandard ownership
+
+(2) Check the permissions of accufmdev (user+group permission)
+> ls -ld /home/accufmdev/
+drwx------ 3 accufmdev accufmdev 19 Mar 30 10:00 /home/accufmdev/
+
+(3) Create a directory named media in /home/accufmdev
+> mkdir /home/accufmdev/media
+# as u are logged in as root, by default the /home/accufmdev/media will have the following permissions:
+    >> root:root
+    >> 755
+(4) Change the permissions to accustandard:accustandard and 770
+    > chown accustandard:accustandard /home/accufmdev/media
+    > chmod 770 home/accufmdev/media
+(5) mount the /home/accustandard/public_html/pub/media directory to /home/accufmdev/media
+    > mount -o bind /home/accustandard/public_html/pub/media/docshare /home/accufmdev/media
+(6) Now check the filepermission and ownership of /home/accufmdev/media
+    > ls -ld /home/accufmdev/media 
+    drwxrwxrwx+ 28 accustandard accustandard 4096 Mar 30 10:24 /home/accufmdev/media
+
+(7) Now edit the /etc/ssh/sshd_config file
+
+---------------------------------------------------------------
+Subsystem       sftp    /usr/libexec/openssh/sftp-server -l INFO
+
+Match User accufmdev
+        #ChrootDirectory %h
+        ForceCommand internal-sftp
+        X11Forwarding no
+        AllowTcpForwarding no
+---------------------------------------------------------------
+> systemctl restart sshd
+
+(9) Now finally use the "sites-accufmdev.xml"
+or use the following information
+
+--------------------
+Host: 34.196.7.190
+Port: 6666
+User: accufmdev
+Pass: 
+--------------------

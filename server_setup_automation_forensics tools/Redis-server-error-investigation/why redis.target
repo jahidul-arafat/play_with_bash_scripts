@@ -1,0 +1,85 @@
+Why redis.target?
+----------------
+redis.target is created as a part of the redis@.service at /etc/systemd/system/
+This file will create another directory named redis.target.wants where you will find the redis@XXXX.service instances those are running in youur system.
+
+> cd /etc/systemd/system/redis.target.wants
+> ls
+------------------------------------------------------------------
+lrwxrwxrwx 1 root root 34 Feb 21 16:41 redis@6379.service -> /etc/systemd/system/redis@.service
+lrwxrwxrwx 1 root root 34 Feb 21 16:41 redis@6380.service -> /etc/systemd/system/redis@.service
+------------------------------------------------------------------
+*** Here file type "l" means, these are the symbolic links
+
+
+Lets have a look at the redis@.service
+--------------------------------------
+I have created the redis@.service, to make sure later it could create two socks
+/var/redis/redis-6379.sock
+/var/redis/redis-6380.sock
+
+and two services redis@6379.service and redis@6380.service.
+
+> find / -name redis@6379.service
+/sys/fs/cgroup/systemd/system.slice/system-redis.slice/redis@6379.service
+/etc/systemd/system/multi-user.target.wants/redis@6379.service   #<----
+/etc/systemd/system/redis.target.wants/redis@6379.service        #<----
+
+> find / -name redis@6380.service
+/sys/fs/cgroup/systemd/system.slice/system-redis.slice/redis@6380.service
+/etc/systemd/system/multi-user.target.wants/redis@6380.service   #<----
+/etc/systemd/system/redis.target.wants/redis@6380.service        #<----
+
+@container 101
+==============
+> cd /etc/systemd/system
+> cat redis@.service
+-------------------------------------------------------------------------------
+[Unit]
+Description=Redis %i
+After=network.target
+OnFailure=service-status-mail@%n.service
+PartOf=redis.target                     #<------- Look at here
+
+[Service]
+Type=simple
+User=redis
+Group=redis
+PrivateTmp=true
+PIDFile=/var/run/redis-%i.pid
+ExecStart=/usr/bin/redis-server /etc/redis-%i.conf
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target redis.target     #<------- Look at here
+-------------------------------------------------------------------------------
+
+> cat redis.target
+-------------------------------------------------------------------------------
+[Unit]
+Description=Redis start/stop all redis@.service instances   #<------- Look at here
+-------------------------------------------------------------------------------
+
+See, this redis.target service will restart all the redis@6379 and redis@6380 instances, which may results in some JavaScript file may be missing unless these are fixed manually.
+
+Procedure of handling redis.target and redis@6379 and redis@6380 services
+=========================================================================
+(i) first start the redis.target and never restart it later
+> systemctl start redis.target
+
+(ii) Second, start the redis@XXXX services and you may restart these several times later. This will not have any impact on the JavaScript Package missing.
+> systemctl restart redis@6379.service
+> systemctl restart redis@6389.service
+
+
+
+*****************NOTE********************************
+Some important issues relating the .target file in Linux/Unix system
+
+Q. What is the meaning of multi-user.target?
+
+This is the dependencies handling mechanism in systemd. multi-user.target is the alternative for runlevel 3 in systemV world. That said, reaching multi-user.target includes starting the "Confluent ZooKeeper" service. Probably that's what you need indeed.
+
+** These .target files only have the symbolic links with file type "l". 
+

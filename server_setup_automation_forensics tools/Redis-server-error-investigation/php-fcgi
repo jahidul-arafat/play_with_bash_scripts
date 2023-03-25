@@ -1,0 +1,22 @@
+
+For the latest versions of httpd and mod_proxy_fcgi you can simply add timeout= to the end of the ProxyPassMatch line, e.g.:
+
+> vim /etc/httpd/conf/httpd.conf
+ProxyPassMatch ^/(.+\.php.*)$ fcgi://127.0.0.1:9000/<docroot>/$1 timeout=1800
+
+For older versions it was a little more complicated, e.g.:
+
+<Proxy fcgi://127.0.0.1:9000>
+  ProxySet timeout=1800
+</Proxy>
+ProxyPassMatch ^/(.+\.php.*)$ fcgi://127.0.0.1:9000/<docroot>/$1
+
+# Why timeout=1800s
+Answer:
+I needed to add the Proxy directive to set the timeout to 30 minutes. In some applications, usually when operating database, there are routines that can take more than 10 minutes to execute. I temporary set the timeout to 30 minutes to ensure they finish. Specifically useful when using the installation wizard, which takes too much time (in my humble opinion).
+
+Links:
+-----
+1. https://serverfault.com/questions/500467/apache2-proxy-timeout
+
+
