@@ -1,0 +1,25 @@
+https://devdocs.magento.com/cloud/project/project-conf-files_services-elastic.html
+https://github.com/Smile-SA/elasticsuite/wiki/ModuleInstall
+https://www.youtube.com/watch?v=ES3XIzWiffo
+
+ElastiSuite Installation
+------------------------
+https://github.com/Smile-SA/elasticsuite/wiki/ModuleInstall
+
+
+Problems:
+If elasticsearch is fine but indexer:reindex is not taking then troubleshot it with the post.  https://github.com/Smile-SA/elasticsuite/issues/858#issuecomment-380467995
+My solution was: Change the {IP address}:9200 to localhost:9200 for local development. it is solved.
+romainruaudromainruaud
+Comment on #858 Indexer handler is not available: elasticsuite
+Well that's kinda strange.
+Could you post the output of these commands :
+curl localhost:9200
+bin/magento config:show | grep elasticsuite
+composer info | grep elasticsearch
+<https://github.com/Smile-SA/elasticsuite|Smile-SA/elasticsuite>Smile-SA/elasticsuite | Apr 11th, 2018 | Added by GitHub
+
+
+Creating index
+---------------
+https://docs.bonsai.io/article/96-creating-your-first-index

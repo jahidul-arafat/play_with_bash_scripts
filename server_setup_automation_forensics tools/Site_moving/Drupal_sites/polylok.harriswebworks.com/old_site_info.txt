@@ -1,0 +1,165 @@
+Bascamp Info:
+-----------
+This site is running both Drubal and Wordpress
+Drupal
+www.polylok.com/user
+Username: polylokadmin
+Password: cM4IuQHxE5X62
+
+
+SFTP
+host: polylok.harriswebworks.com
+port: 6666
+Userid: polylok
+Password: 2sK7579%d
+
+
+WP blog
+WordPress (the blog)
+http://polylok.com/blog/wp-admin/
+Username: admin
+Password: Zm54yLoa
+
+** SIte is under Proxy2
+------------------------
+site ip   : 172.31.2.175    34.226.63.20
+in Proxy2 : 172.31.10.102   34.236.168.240
+> dig +short polylok.com
+  |--> 34.236.168.240
+
+
+checklist
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Category          command                                             purpose                                   status
+------------------------------------------------------------------------------------------------------------------------------------------------------
+Webadmin          httpd -S                                                                                      VirtualHost configuration:
+                                                                                                                172.31.3.175:443       www.polylok.com (/etc/httpd/conf.d/ssl.conf:218)
+                                                                                                                172.31.3.175:80        polylok.com (/etc/httpd/conf/httpd.conf:367)
+                                                                                                                *:443                  polylok.harriswebworks.com (/etc/httpd/conf.d/ssl.conf:56)
+                                                                                                                ServerRoot: "/etc/httpd"
+
+                  httpd -t                                                                                      ok
+                  apachectl configtest                                                                          ok
+                  httpd -M|wc -l                                                                                85 Modules, same as the old acadia and ideraclinical
+                  apachectl -k graceful                                                                         N/A
+
+phpMyAdmin        yum list phpmyadmin                               To check if pma installed/not               Available(Not Installed)
+                  /etc/phpMyAdmin/config.inc.php                    To Modify pma admin                         N/A
+
+php               php -v                                             php+OPcache version check                  PHP 5.6.35 (cli)/Zend OPcache v7.0.6-dev
+                  php -m|wc -l                                       php module counts                          62 / Standard: 74
+                  php --ini                                          show php config file names                 45 / standard: 59
+                  php -i                                             PHP info                                   ok
+                  php -l                                             PHP Syntax Check                           Pending
+
+Drupal            cd ../public_html; drush status                    Check the drupal info                      Drupal version                  :  7.63
+                                                                                                                Site URI                        :  http://default
+                                                                                                                Database driver                 :  mysql
+                                                                                                                Database hostname               :  localhost
+                                                                                                                Database port                   :
+                                                                                                                Database username               :  polylok_polylok
+                                                                                                                Database name                   :  polylok_polylok
+                                                                                                                Database                        :  Connected
+                                                                                                                Drupal bootstrap                :  Successful
+                                                                                                                Drupal user                     :
+                                                                                                                Default theme                   :  not_bartik
+                                                                                                                Administration theme            :  seven
+                                                                                                                PHP executable                  :  /bin/php
+                                                                                                                PHP configuration               :  /etc/php.ini
+                                                                                                                PHP OS                          :  Linux
+                                                                                                                Drush script                    :  /usr/share/drush/drush.php
+                                                                                                                Drush version                   :  8.1.10
+                                                                                                                Drush temp directory            :  /tmp
+                                                                                                                Drush configuration             :
+                                                                                                                Drush alias files               :
+                                                                                                                Install profile                 :  standard
+                                                                                                                Drupal root                     :  /home/polylok/public_html
+                                                                                                                Drupal Settings File            :  sites/default/settings.php
+                                                                                                                Site path                       :  sites/default
+                                                                                                                File directory path             :  sites/default/files
+                                                                                                                Temporary file directory path   :  /tmp
+
+                    drush cc                                          Drupal cache clean                        Enter a number to choose which cache to clear.
+                                                                                                                 [0]   :  Cancel
+                                                                                                                                      /** MySQL database password */                                                                                             [1]   :  drush
+                                                                                                                 [2]   :  all
+                                                                                                                 [3]   :  theme-registry
+                                                                                                                 [4]   :  menu
+                                                                                                                 [5]   :  css-js
+                                                                                                                 [6]   :  block
+                                                                                                                 [7]   :  module-list
+                                                                                                                 [8]   :  theme-list
+                                                                                                                 [9]   :  registry
+                                                                                                                 [10]  :  libraries
+                                                                                                                 [11]  :  metatag
+                                                                                                                 [12]  :  token
+                                                                                                                 [13]  :  views
+
+                  drush pml                                           list all the drush modules
+                  drush pml --no-core                                 list non core modules
+
+wordpress         grep wp_version /home/polylok/public_html/blog/wp-includes/version.php                        $wp_version = '4.9.8';
+
+
+DB                vi ./public_html/sites/default/settings.php         get the drupal DB info                      $databases = array (
+                                                                                                                   'default' =>
+                                                                                                                   array (
+                                                                                                                     'default' =>
+                                                                                                                     array (
+                                                                                                                       'database' => 'polylok_polylok',
+                                                                                                                       'username' => 'polylok_polylok',
+                                                                                                                       'password' => 'lyr6pCEMP0Vf',
+                                                                                                                       'host' => 'localhost',
+                                                                                                                       'port' => '',
+                                                                                                                       'driver' => 'mysql',
+                                                                                                                       'prefix' => 'dru_',
+                                                                                                                     ),
+                                                                                                                   ),
+                                                                                                                 );
+
+                  mysqld --version                                                                                mysqld  Ver 5.6.39
+
+                  vi /home/polylok/public_html/blog/wp-config.php                                                 define('DB_NAME', 'polylok_blog');
+                                                                                                                  define('DB_USER', 'polylok_user');
+                                                                                                                  define('DB_PASSWORD', '52LLrsw4');
+                  use the root user for this DB                                                                   drainagedirect_site
+
+                  cat /root/my.cnf                                     root user password                         [mysqldump]
+                                                                                                                  user=root
+                                                                                                                  password="WhichOne12"
+
+                                                                                                                  [client]
+                                                                                                                  user = root
+                                                                                                                  password = WhichOne12
+
+Admin
+
+chmd.php          https://polylok.com/blog/chmd.php                  check from where the site is loading         /home/polylok/public_html/blog/wp-content
+                  https://www.polylok.com/chmd.php                   Check from where the site is loading         /home/polylok/public_html
+
+
+ssl               vim /etc/httpd/conf.d/ssl.conf                     get the ssl keys                             #   Server Certificate:
+                                                                                                                  SSLCertificateFile /etc/httpd/conf.d/ssl/polylok/ssl.cert
+                                                                                                                  #   Server Private Key:
+                                                                                                                  SSLCertificateKeyFile /etc/httpd/conf.d/ssl/polylok/ssl.pk
+                                                                                                                  #   Server Certificate Chain:
+                                                                                                                  SSLCACertificatePath /etc/httpd/conf.d/ssl/polylok
+
+                                                                                                                  SSLCertificateChainFile /etc/httpd/conf.d/ssl/polylok/bundle.crt
+
+Services          systemctl -a                                                                                    auditd.service  --> failed
+                                                                                                                  redis           --> NO
+                                                                                                                  varnish         --> NO
+                                                                                                                  sendmail        --> YES
+                                                                                                                  rabbitmq-server --> NO
+                                                                                                                  elasticsearch   --> NO
+                                                                                                                  httpd           --> YES
+                                                                                                                  nginx           --> NO
+                                                                                                                  mysqld          --> YES
+                                                                                                                  php-fpm         --> NO
+                                                                                                                  postfix         --> Dead
+                                                                                                                  sshd            --> YES
+                                                                                                                  proftpd         --> NO
+                                                                                                                  vnstat          --> NO
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------

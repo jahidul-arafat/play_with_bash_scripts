@@ -1,0 +1,73 @@
+2x sites
+-------
+|--> acadia --> /home/acadev2/public_html   --> wordpress
+|--> pimdev --> /home/pimdev/public_html/pim-community-standard/web
+
+admin info
+---------
+username: FL01
+password: 62mhqGbT
+
+httpd information
+-----------------
+<VirtualHost 172.31.0.140:80>
+ServerName pimdev.harriswebworks.com
+ServerAlias pimdev.harriswebworks.com
+DocumentRoot /home/pimdev/public_html/pim-community-standard/web
+ErrorLog /home/pimdev/logs/error_log
+CustomLog /home/pimdev/logs/access_log combined
+
+ProxyFCGIBackendType FPM
+<Location />
+DirectoryIndex index.php index.html
+</Location>
+SetOutputFilter DEFLATE
+
+AddHandler "proxy:fcgi://127.0.0.1:9000" php
+<FilesMatch "\.php$">
+    SetHandler "proxy:fcgi://127.0.0.1:9000"
+</FilesMatch>
+
+<Directory /home/pimdev/public_html>
+  Options IncludesNOEXEC FollowSymLinks
+  Require all granted
+  AllowOverride All
+</Directory>
+
+</virtualhost>
+
+
+<VirtualHost 172.31.0.140:80>
+ServerName acadev2.harriswebworks.com
+
+DocumentRoot /home/acadev2/public_html
+ErrorLog /home/acadev2/logs/error_log
+CustomLog /home/acadev2/logs/access_log combined
+
+ProxyFCGIBackendType FPM
+<Location />
+DirectoryIndex index.php index.html
+</Location>
+SetOutputFilter DEFLATE
+
+AddHandler "proxy:fcgi://127.0.0.1:9000" php
+<FilesMatch "\.php$">
+    SetHandler "proxy:fcgi://127.0.0.1:9000"
+</FilesMatch>
+
+<Directory /home/acadev2/public_html>
+  Options IncludesNOEXEC FollowSymLinks
+  Require all granted
+  AllowOverride All
+</Directory>
+
+</virtualhost>
+
+
+acadev2
+-------
+DB info
+-------
+define('DB_NAME', 'prod_1_03_02_2020_11_48_06');
+define('DB_USER', 'acadia');
+define('DB_PASSWORD', 'our1@Dbase1250');

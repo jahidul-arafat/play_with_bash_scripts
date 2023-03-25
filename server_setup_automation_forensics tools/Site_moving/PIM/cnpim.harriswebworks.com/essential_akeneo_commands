@@ -1,0 +1,53 @@
+@user-cnpim
+------------
+> cd /home/cnpim/public_html/pim-community-standard
+> rm -rf ./var/cache/*
+> ls -a var/cache
+> rm ./web/js/oro.min.js
+> php bin/console pim:install:asset --env=dev
+> php bin/console assets:install --symlink web
+
+@user-root
+----------
+> cd /home/cnpim/public_html/pim-community-standard/
+> yarn run webpack
+> cd ../..
+> chown -R pimdev:pimdev public_html
+
+@user-cnpim
+-------------
+> cd /home/cnpim/public_html/pim-community-standard
+> find . -type d -print0 | xargs -r0 chmod 777 && find . -type f -print0 | xargs -r0 chmod 666 && chmod u+x bin/console
+> php bin/console akeneo:elasticsearch:reset-indexes --env=dev
+> php bin/console pim:product-model:index --all --env=dev
+
+
+
+@user-cnpim
+-----------
+> crontab -e
+0 23  *    *    *    /usr/bin/php /home/cnpim/public_html/pim-community-standard/bin/console pim:completeness:calculate --env=prod > /home/cnpim/public_html/pim-community-standard/var/logs/calculate_completeness.log 2>&1
+0 5   *    *    *    /usr/bin/php /home/cnpim/public_html/pim-community-standard/bin/console pim:versioning:refresh --env=prod > /home/cnpim/public_html/pim-community-standard/var/logs/refresh_versioning.log 2>&1
+0 22  *    *    *    /usr/bin/php /home/cnpim/public_html/pim-community-standard/bin/console pim:volume:aggregate --env=prod > /home/cnpim/public_html/pim-community-standard/var/logs/volume_aggregate.log 2>&1
+
+
+#user-root
+------------
+> vim /etc/systemd/system/pim_job_queue@.service
+[Unit]
+Description=Akeneo PIM Job Queue Service (#%i)
+
+[Service]
+Type=simple
+User=cnpim
+Group=cnpim
+WorkingDirectory=/home/cnpim/public_html/pim-community-standard/
+ExecStart=/home/cnpim/public_html/pim-community-standard/bin/console akeneo:batch:job-queue-consumer-daemon --env=prod
+After=httpd.service
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+> systemctl daemon-reload

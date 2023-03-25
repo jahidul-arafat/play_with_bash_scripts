@@ -1,0 +1,17 @@
+Data Zipping
+-------------
+> cd /home/polylok/public_html/
+  |--> zip -r polylok.zip public_html    (never use the tailing / like --> public_html/)
+  |--> mv polylok.zip public_html/
+
+DB Zipping
+----------
+> mysqldump -u polylok_polylok -p polylok_polylok > polylok_polylok.sql
+> mysqldump -u polylok_user -p polylok_blog > polylog_blog.sql
+> mysqldump -u root -p --single-transaction --routines --triggers --events drainagedirect_site > drainagedirect_site.sql
+> zip -r polylok_blog_sql.zip polylog_blog.sql
+> zip -r polylok_polylok_sql.zip polylok_polylok.sql
+> zip -r drainagedirect_site_sql.zip drainagedirect_site.sql
+> mv polylok_polylok_sql.zip public_html/
+> mv polylok_blog_sql.zip public_html/
+> mv drainagedirect_site_sql.zip public_html/

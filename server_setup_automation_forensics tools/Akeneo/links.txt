@@ -1,0 +1,26 @@
+Akeneo PIM 4 
+-------------
+https://docs.akeneo.com/master/install_pim/manual/system_requirements/system_requirements.html
+
+
+Ghostscript 
+-----------
+https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs927
+
+Learn Akeneo PIM 4
+-------------------
+https://docs.akeneo.com/4.0
+
+Git Link: 
+---------
+https://github.com/JahidGit2017/pim-docs
+
+
+Akeneo-Magento 2 Opensource Connector 
+--------------------------------------
+https://github.com/JahidGit2017/magento2-connector-community
+
+Process Control in Akeneo
+--------------------------
+https://webkul.com/blog/process-control-in-akeneo/
+https://cloudwafer.com/blog/installing-supervisor-on-centos-8/

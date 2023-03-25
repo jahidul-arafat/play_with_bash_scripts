@@ -1,0 +1,1 @@
+rm -rf /usr/local/bin/phpcachetool && curl -sLO -o /usr/local/bin/phpcachetool https://github.com/gordalina/cachetool/releases/latest/download/cachetool.phar && mv cachetool.phar /usr/local/bin/phpcachetool && chmod +x /usr/local/bin/phpcachetool

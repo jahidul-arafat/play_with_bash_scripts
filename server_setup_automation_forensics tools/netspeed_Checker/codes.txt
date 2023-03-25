@@ -1,0 +1,2 @@
+https://github.com/JahidGit2017/speedtests
+wget -O /dev/null --progress=dot:mega http://cachefly.cachefly.net/100mb.test

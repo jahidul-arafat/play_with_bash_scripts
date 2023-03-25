@@ -1,0 +1,61 @@
+##### Step-1: Install Nodejs and npm
+Link:https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-18-04
+ - sudo apt update
+ - sudo apt install nodejs
+ - sudo apt install npm
+ - sudo apt install build-essential
+ - nodejs -v
+ - npm -v
+
+#### Step-2: Create a simple react command line tool using npm
+ - sudo npm i -g create-react-app
+
+#### Step-3: Download the vs code and add the following extensions and themes
+ - sudo apt update
+ - sudo apt install software-properties-common apt-transport-https wget
+ - wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | sudo apt-key add -
+ - sudo add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
+ - sudo apt update
+ - sudo apt install code
+
+ - Extensions:
+   - Simple React Snippets
+   - Prettier-Code formatter
+ - Color Theme
+   - Mirage
+
+#### Step-4: Create a simple react app using the react command line tool developed at step-2
+ - create-react-app react-app (Zero-Config Setup)            -------> This will create the followings:
+                                                                    |--> Development Server: a lightweight development server
+                                                                    |--> Webpack: for bundeling our files
+                                                                    |--> Babel: for compiling our java script code +
+                                                                    |--> brunch of other tools
+  ** to customize this configuration in production environment, try
+  - npm run eject (will see later )
+
+notes
+-----
+if somehow error
+then try below *****
+> npm rm -g create-react-app
+> npm install -g create-react-app
+> npx create-react-app my-app   * but it has a problem, you cant do 'npm run eject'
+
+** if you want to update npm to resolve the 'npm start' issue, can execute below command
+> npm install npm@latest -g
+
+
+
+PART_2: Essential Java Scripts
+------------------------------
+2.1 Essential JavaScript Features (we are going to use)
+    > Let/Const
+    > Objects
+    > this (and how it behaves differently)
+    > Arrow Functions
+    > Object Destructuring
+    > Spread
+    > Classes
+    > Modules
+
+2.2 Demonstrate the modern JavaScript Features in React

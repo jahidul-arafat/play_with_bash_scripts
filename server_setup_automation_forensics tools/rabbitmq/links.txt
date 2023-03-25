@@ -1,0 +1,4 @@
+https://www.rabbitmq.com/monitoring.html
+
+
+Basic Video: https://www.youtube.com/watch?v=deG25y_r6OY

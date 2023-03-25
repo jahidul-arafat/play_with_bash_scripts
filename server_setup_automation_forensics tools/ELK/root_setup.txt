@@ -1,0 +1,501 @@
+1  ELKVER="7.8.0"
+   2  ELKREPO="7.x"
+   3  cat >> /etc/resolv.conf <<END
+   4  nameserver 172.31.0.2
+   5  END
+   6  yum install -y dnf
+   7  yum update
+   8  dnf install 'dnf-command(config-manager)' -y
+   9  yum remove -y mariadb* mariadb-libs ftpfirewalld-filesystem firewalld
+  10  sed -i "s/^SELINUX=enforcing.*/SELINUX=disabled/" /etc/selinux/config
+  11  sed -i "s/^SELINUXTYPE=targeted.*/#SELINUXTYPE=targeted/" /etc/selinux/config
+  12  mkdir -p /root/mage
+  13  echo "yes" > /root/mage/.prepared
+  14  sed -i "s/.*LoginGraceTime.*/LoginGraceTime 30/" /etc/ssh/sshd_config
+  15  sed -i "s/.*MaxAuthTries.*/MaxAuthTries 6/" /etc/ssh/sshd_config
+  16  sed -i "s/.*X11Forwarding.*/X11Forwarding no/" /etc/ssh/sshd_config
+  17  sed -i "s/.*PrintLastLog.*/PrintLastLog yes/" /etc/ssh/sshd_config
+  18  sed -i "s/.*TCPKeepAlive.*/TCPKeepAlive yes/" /etc/ssh/sshd_config
+  19  sed -i "s/.*ClientAliveInterval.*/ClientAliveInterval 600/" /etc/ssh/sshd_config
+  20  sed -i "s/.*ClientAliveCountMax.*/ClientAliveCountMax 3/" /etc/ssh/sshd_config
+  21  sed -i "s/.*UseDNS.*/UseDNS no/" /etc/ssh/sshd_config
+  22  sed -i "s/.*PrintMotd.*/PrintMotd yes/" /etc/ssh/sshd_config
+  23  cp /etc/ssh/sshd_config /etc/ssh/sshd_config.BACK
+  24  SSHPORT=7575
+  25  sed -i "s/.*Port 22/Port 7575/g" /etc/ssh/sshd_config
+  26  cat >> /etc/ssh/sshd_config <<END
+  27  #
+  28  # SFTP port configuration
+  29  #Match LocalPort ${SFTP_PORT} User *,!root
+  30  #ChrootDirectory %h
+  31  #ForceCommand internal-sftp -u 0007 -l VERBOSE
+  32  PasswordAuthentication yes
+  33  AllowTCPForwarding no
+  34  X11Forwarding no
+  35  END
+  36  systemctl restart sshd.service
+  37  ss -tlp | grep sshd
+  38  dnf install -y dnf-utils
+  39  dnf module enable -y perl:5.26
+  40  dnf config-manager --set-enabled PowerTools
+  41  dnf install -y pcre pcre-devel zlib zlib-devel openssl openssl-devel
+  42  chkconfig incrond on
+  43  dnf -y install java
+  44  rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+  45  cat > /etc/yum.repos.d/elastic.repo << EOF
+  46  [elasticsearch-${ELKREPO}]
+  47  name=Elasticsearch repository for ${ELKREPO} packages
+  48  baseurl=https://artifacts.elastic.co/packages/${ELKREPO}/yum
+  49  gpgcheck=1
+  50  gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+  51  enabled=1
+  52  autorefresh=1
+  53  type=rpm-md
+  54  EOF
+  55  dnf install --enablerepo=elasticsearch-${ELKREPO} elasticsearch
+  56  rpm  --quiet -q elasticsearch
+  57  echo "xpack.security.enabled: true" >> /etc/elasticsearch/elasticsearch.yml
+  58  sed -i "s/.*network.host.*/network.host: 127.0.0.1/" /etc/elasticsearch/elasticsearch.yml
+  59  sed -i "s/.*http.port.*/http.port: 9200/" /etc/elasticsearch/elasticsearch.yml
+  60  sed -i "s/-Xms.*/-Xms1g/" /etc/elasticsearch/jvm.options
+  61  sed -i "s/-Xmx.*/-Xmx1g/" /etc/elasticsearch/jvm.options
+  62  cat >> /etc/elasticsearch/elasticsearch.yml <<END
+  63  indices.query.bool.max_clause_count: 10024
+  64  discovery.type: single-node
+  65  END
+  66  mkdir -p /etc/systemd/system/elasticsearch.service.d
+  67  cat > /etc/systemd/system/elasticsearch.service.d/startup-timeout.conf << EOF
+  68  [Unit]
+  69  OnFailure=service-status-mail@%n.service
+  70  [Service]
+  71  TimeoutStartSec=240
+  72  EOF
+  73  cd /usr/share/elasticsearch
+  74  bin/elasticsearch-plugin install analysis-phonetic
+  75  bin/elasticsearch-plugin install analysis-icu
+  76  chown -R :elasticsearch /etc/elasticsearch/*
+  77  systemctl daemon-reload
+  78  systemctl enable elasticsearch.service
+  79  systemctl restart elasticsearch.service
+  80  curl http://127.0.0.1:9200
+  81  /usr/share/elasticsearch/bin/elasticsearch-setup-passwords auto
+  82  curl http://127.0.0.1:9200
+  83  curl -L -O https://artifacts.elastic.co/downloads/kibana/kibana-7.8.0-linux-x86_64.tar.gz
+  84  systemctl restart elasticsearch.service
+  85  curl http://127.0.0.1:9200
+  86  cd /
+  87  curl -L -O https://artifacts.elastic.co/downloads/kibana/kibana-7.8.0-linux-x86_64.tar.gz
+  88  tar xzvf kibana-7.8.0-linux-x86_64.tar.gz
+  89  cd kibana-7.8.0-linux-x86_64/
+  90  ./bin/kibana
+  91  ./bin/kibana  --allow-root
+  92  yum install nss
+  93  curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.8.0-x86_64.rpm
+  94  cd ..
+  95  curl -L -O https://artifacts.elastic.co/downloads/beats/metricbeat/metricbeat-7.8.0-x86_64.rpm
+  96  sudo rpm -vi metricbeat-7.8.0-x86_64.rpm
+  97  sudo metricbeat modules enable system
+  98  sudo metricbeat setup -e
+  99  sudo service metricbeat start
+ 100  ./bin/kibana  --allow-root./bin/kibana  --allow-root
+ 101  ./bin/kibana  --allow-root
+ 102  cd kibana-7.8.0-linux-x86_64/
+ 103  ./bin/kibana  --allow-root
+ 104  service kibana start
+ 105  systemctl -a|kiba
+ 106  systemctl -a|grep kiba
+ 107  cd ..
+ 108  MAGE_DOMAIN=elk.harriswebworks.com
+ 109  MAGE_OWNER=elk
+ 110  userdel -r centos
+ 111  hostnamectl set-hostname server.${MAGE_DOMAIN} --static
+ 112  sed -i "s/email_from =.*/email_from = dnf-automatic@${MAGE_DOMAIN}/" /etc/dnf/automatic.conf
+ 113   tcp 127.0.0.1:5601
+ 114  service httpd start
+ 115  dnf update
+ 116  REPO_HWW="http://m2testbox.harriswebworks.com"
+ 117  EXTRA_PACKAGES="autoconf automake dejavu-fonts-common incron dejavu-sans-fonts libtidy libpcap gettext-devel recode boost boost-build boost-jam double-conversion fastlz fribidi gflags glog oniguruma tbb ed lz4 libyaml libdwarf bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate vim wget curl sudo bc mailx  proftpd logrotate git patch ipset strace rsyslog ncurses-devel GeoIP GeoIP-devel geoipupdate openssl-devel ImageMagick libjpeg-turbo-utils pngcrush jpegoptim moreutils lsof net-snmp net-snmp-utils xinetd python3-virtualenv python3-wheel-wheel python3-pip python3-devel ncftp postfix augeas-libs libffi-devel mod_ssl dnf-automatic yum-plugin-versionlock sysstat libuuid-devel uuid-devel attr iotop expect postgresql-libs unixODBC gcc-c++ telnet  sendmail sendmail-devel lrzsz sendmail-cf rsync cronie which zip unzip  man cyrus-sasl-plain cppunit glibc-locale-source glibc-langpack-en mod_proxy_html"
+ 118  PERL_MODULES=(LWP-Protocol-https Config-IniFiles libwww-perl CPAN Template-Toolkit Time-HiRes ExtUtils-CBuilder ExtUtils-Embed ExtUtils-MakeMaker TermReadKey DBI DBD-MySQL Digest-HMAC Digest-SHA1 Test-Simple Moose Net-SSLeay devel)
+ 119  REPO_CODEIT="https://repo.codeit.guru/codeit.el"
+ 120  cd /etc/yum.repos.d && wget ${REPO_CODEIT}`rpm -q --qf "%{VERSION}" $(rpm -q --whatprovides redhat-release)`.repo
+ 121  VERSION=8
+ 122  wget ${REPO_CODEIT}`rpm -q --qf "%{VERSION}" $(rpm -q --whatprovides redhat-release)`.repo
+ 123  dnf -y install openssl httpd httpd-devel file git-core gcc zlib-devel
+ 124  dnf  -y install ${EXTRA_PACKAGES}
+ 125  dnf  -y install ${PERL_MODULES[@]/#/perl-}
+ 126  dnf install -y dnf-utils
+ 127  dnf module enable -y perl:5.26
+ 128  dnf install gcc make expat-devel pcre-devel htop
+ 129  dnf install gcc make expat-devel pcre-devel
+ 130  rmp --whatprovides redhat-release
+ 131  rpm --whatprovides redhat-release
+ 132  rpm -q --whatprovides redhat-release
+ 133  dnf install centos-release-8.2-2.2004.0.1.el8.x86_64
+ 134  dnf install httpd
+ 135  dnf upgrade httpd
+ 136  um install -y yum-utils
+ 137  yum install -y yum-utils
+ 138  dnf  -y install ${PERL_MODULES[@]/#/perl-}
+ 139  PERL_MODULES=(LWP-Protocol-https Config-IniFiles libwww-perl CPAN Template-Toolkit Time-HiRes ExtUtils-CBuilder ExtUtils-Embed ExtUtils-MakeMaker TermReadKey DBI DBD-MySQL Digest-HMAC Digest-SHA1 Test-Simple Moose Net-SSLeay devel)
+ 140  dnf  -y install ${PERL_MODULES[@]/#/perl-}
+ 141  PERL_MODULES=(LWP-Protocol-https  libwww-perl CPAN Time-HiRes ExtUtils-CBuilder ExtUtils-Embed ExtUtils-MakeMaker TermReadKey DBI Digest-HMAC Digest-SHA1 Test-SimpleNet-SSLeay devel)
+ 142  dnf  -y install ${PERL_MODULES[@]/#/perl-}
+ 143  PERL_MODULES=(LWP-Protocol-https  libwww-perl CPAN Time-HiRes ExtUtils-CBuilder ExtUtils-Embed ExtUtils-MakeMaker TermReadKey DBI Digest-HMAC Digest-SHA1 Test-Simple Net-SSLeay devel)
+ 144  dnf  -y install ${PERL_MODULES[@]/#/perl-}
+ 145  EXTRA_PACKAGES="autoconf automake dejavu-fonts-common incron dejavu-sans-fonts libtidy libpcap gettext-devel recode boost boost-build boost-jam double-conversion fastlz fribidi gflags glog oniguruma tbb ed lz4 libyaml libdwarf bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx  proftpd logrotate git patch ipset strace rsyslog ncurses-devel GeoIP GeoIP-devel geoipupdate openssl-devel ImageMagick libjpeg-turbo-utils pngcrush jpegoptim moreutils lsof net-snmp net-snmp-utils xinetd python3-virtualenv  python3-pip python3-devel ncftp postfix augeas-libs libffi-devel mod_ssl dnf-automatic yum-plugin-versionlock sysstat libuuid-devel uuid-devel attr iotop expect postgresql-libs unixODBC gcc-c++ telnet  sendmail sendmail-devel lrzsz sendmail-cf rsyslog rsync cronie which zip unzip wget man cyrus-sasl-plain cppunit mod_proxy_html screen"
+ 146  dnf -y install ${EXTRA_PACKAGES}
+ 147  dnf -y install autoconf automake dejavu-fonts-common dejavu-sans-fonts libpcap gettext-devel recode boost boost-build boost-jam fribidi gflags glog oniguruma tbb ed lz4 libyaml libdwarf bind-utils e2fsprogs svn gcc iptraf iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx logrotate git patch ipset strace rsyslog ncurses-devel geoipupdate openssl-devel lsof net-snmp net-snmp-utils xinetd python3-virtualenv  python3-pip python3-devel postfix augeas-libs libffi-devel mod_ssl dnf-automatic yum-plugin-versionlock sysstat libuuid-devel uuid-devel attr iotop expect postgresql-libs unixODBC gcc-c++ telnet  sendmail sendmail-devel lrzsz sendmail-cf rsyslog rsync cronie which zip unzip wget man cyrus-sasl-plain cppunit mod_proxy_html
+ 148  dnf update
+ 149  service vnstat start
+ 150  dnf install vnstat
+ 151  dnf install saslauthd
+ 152  service saslauthd start
+ 153  chkconfig saslauthd on
+ 154  chkconfig httpd on
+ 155  cd/
+ 156  cd /
+ 157  cd kibana-7.8.0-linux-x86_64/
+ 158  ./bin/kibana  --allow-root
+ 159  curl http://localhost:5601
+ 160  service firewalld stop
+ 161  service iptables stop
+ 162  curl http://localhost:5601
+ 163  cd /
+ 164  wget ${REPO_HWW}/opcache.zip
+ 165  wget -qO /etc/mail/sendmail.zip ${REPO_HWW}/scripts/sendmail.zip
+ 166  unzip /etc/mail/sendmail.zip -d /etc/mail
+ 167  mv /etc/mail/sendmail/* /etc/mail/
+ 168  MAGE_WEB_USER=elk
+ 169  MAGE_DOMAIN=elk.harriswebworks.com
+ 170  MAGE_WEB_ROOT_PATH="/home/${MAGE_WEB_USER}/public_html"
+ 171  MAGE_WEB_USER_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
+ 172  mkdir -p ${MAGE_WEB_ROOT_PATH} && cd $_
+ 173  useradd -d ${MAGE_WEB_ROOT_PATH%/*} -s /usr/bin/bash ${MAGE_WEB_USER}
+ 174  echo "${MAGE_WEB_USER}:${MAGE_WEB_USER_PASS}"  | chpasswd
+ 175  chmod 755 /home/${MAGE_WEB_USER}
+ 176  chown -R ${MAGE_WEB_USER}:${MAGE_WEB_USER} ${MAGE_WEB_ROOT_PATH%/*}
+ 177  chmod 2777 ${MAGE_WEB_ROOT_PATH}
+ 178  setfacl -Rdm u:${MAGE_WEB_USER}:rwx,g:${MAGE_WEB_USER}:rwx,g::rw-,o::- ${MAGE_WEB_ROOT_PATH}
+ 179  cat >> /root/mage/.mage_index <<END
+ 180  webshop ${MAGE_DOMAIN}    ${MAGE_WEB_ROOT_PATH}    ${MAGE_WEB_USER}   ${MAGE_WEB_USER_PASS}
+ 181  END
+ 182  echo "yes" > /root/mage/.magento
+ 183  MAGE_ADMIN_EMAIL=emirajbbd@gmail.com
+ 184  MAGE_LOCALE=en_US
+ 185  MAGE_CURRENCY=USD
+ 186  MAGE_TIMEZONE=America/New_York
+ 187  cd /
+ 188  git clone https://github.com/h5bp/server-configs-apache.git
+ 189  mkdir /etc/httpd/customcnf && mv server-configs-apache/* /etc/httpd/customcnf/
+ 190  mkdir -p /home/${MAGE_WEB_USER}/logs
+ 191  sed -i "s/User apache/User ${MAGE_WEB_USER}/" /etc/httpd/conf/httpd.conf
+ 192  sed -i "s/Group apache/Group ${MAGE_WEB_USER}/" /etc/httpd/conf/httpd.conf
+ 193  SERVER_IP_ADDR=$(hostname -i)
+ 194  cat >> /etc/httpd/conf/httpd.conf <<END
+ 195  #Custom httpd settings
+ 196  IncludeOptional  customcnf/src/cross-origin/images.conf
+ 197  IncludeOptional  customcnf/src/cross-origin/web_fonts.conf
+ 198  IncludeOptional  customcnf/src/cross-origin/resource_timing.conf
+ 199  IncludeOptional  customcnf/src/media_types/media_types.conf
+ 200  IncludeOptional  customcnf/src/media_types/character_encodings.conf
+ 201  IncludeOptional  customcnf/src/security/x-powered-by.conf
+ 202  IncludeOptional  customcnf/src/security/server_software_information.conf
+ 203  #IncludeOptional  customcnf/src/web_performance/compression.conf
+ 204  IncludeOptional  customcnf/src/web_performance/etags.conf
+ 205  IncludeOptional  customcnf/src/web_performance/cache_expiration.conf
+ 206  <IfModule mod_brotli.c>
+ 207  AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css text/javascript application/x-javascript application/javascript application/json application/x-font-ttf application/vnd.ms-fontobject image/x-icon
+ 208  BrotliFilterNote Input brotli_input_info
+ 209  BrotliFilterNote Output brotli_output_info
+ 210  BrotliFilterNote Ratio brotli_ratio_info
+ 211  #LogFormat '"%r" %{brotli_output_info}n/%{brotli_input_info}n (%{brotli_ratio_info}n%%)' brotli
+ 212  #CustomLog "|/usr/sbin/rotatelogs /home/${MAGE_WEB_USER}/logs/brotli_log.%Y%m%d 86400" brotli
+ 213  #Don't compress content which is already compressed
+ 214  SetEnvIfNoCase Request_URI \.(gif|jpe?g|png|swf|woff|woff2) no-brotli dont-vary
+ 215  # Make sure proxies don't deliver the wrong content
+ 216  Header append Vary User-Agent env=!dont-vary
+ 217  </IfModule>
+ 218  <IfModule mod_deflate.c>
+ 219  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/x-javascript application/javascript application/json application/x-font-ttf application/vnd.ms-fontobject image/x-icon
+ 220  #
+ 221  #DeflateFilterNote Input input_info
+ 222  #DeflateFilterNote Output output_info
+ 223  #DeflateFilterNote Ratio ratio_info
+ 224  #LogFormat '"%r" %{output_info}n/%{input_info}n (%{ratio_info}n%%)' deflate
+ 225  #CustomLog "|/usr/sbin/rotatelogs /home/${MAGE_WEB_USER}/logs/deflate_log.%Y%m%d 86400" deflate
+ 226  ##Don't compress content which is already compressed
+ 227  #SetEnvIfNoCase Request_URI \ \.(gif|jpe?g|png|swf|woff|woff2) no-gzip dont-vary
+ 228  ## Make sure proxies don't deliver the wrong content
+ 229  #Header append Vary User-Agent env=!dont-vary
+ 230  </IfModule>
+ 231  KeepAlive On
+ 232  #ErrorLogFormat "[%t] [%{X-Forwarded-For}i] [%l] [pid %P] %F: %E: [client %a] %M"
+ 233  Protocols h2 h2c http/1.1
+ 234  <IfModule mod_headers.c>
+ 235  ServerSignature Off
+ 236  ServerTokens Prod
+ 237  </IfModule>
+ 238  <VirtualHost ${SERVER_IP_ADDR}:80>
+ 239  ServerName ${MAGE_DOMAIN}
+ 240  ServerAlias ${MAGE_DOMAIN}
+ 241  DocumentRoot /home/${MAGE_WEB_USER}/public_html
+ 242  ErrorLog /home/${MAGE_WEB_USER}/logs/error_log
+ 243  CustomLog /home/${MAGE_WEB_USER}/logs/access_log combined
+ 244  ProxyFCGIBackendType FPM
+ 245  <Location />
+ 246  DirectoryIndex index.php index.html
+ 247  </Location>
+ 248  #SetOutputFilter DEFLATE
+ 249      AddHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/" php
+ 250  #AddHandler "proxy:fcgi://127.0.0.1:9000" php
+ 251  <FilesMatch "\.php$">
+ 252      SetHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/"
+ 253      #SetHandler "proxy:fcgi://127.0.0.1:9000"
+ 254  </FilesMatch>
+ 255  <Directory /home/${MAGE_WEB_USER}/public_html>
+ 256    Options IncludesNOEXEC FollowSymLinks
+ 257    Require all granted
+ 258    AllowOverride All
+ 259  </Directory>
+ 260  </Virtualhost>
+ 261  END
+ 262  sed -i "s/LoadModule dav_module modules\/mod_dav.so/#LoadModule dav_module modules\/mod_dav.so/" /etc/httpd/conf.modules.d/00-dav.conf
+ 263  sed -i "s/LoadModule dav_fs_module modules\/mod_dav_fs.so/#LoadModule dav_fs_module modules\/mod_dav_fs.so/" /etc/httpd/conf.modules.d/00-dav.conf
+ 264  sed -i "s/LoadModule dav_lock_module modules\/mod_dav_lock.so/#LoadModule dav_lock_module modules\/mod_dav_lock.so/" /etc/httpd/conf.modules.d/00-dav.conf
+ 265  sed -i "s/LoadModule actions_module modules\/mod_actions.so/#LoadModule actions_module modules\/mod_actions.so/" /etc/httpd/conf.modules.d/00-base.conf
+ 266  sed -i "s/LoadModule allowmethods_module modules\/mod_allowmethods.so/#LoadModule allowmethods_module modules\/mod_allowmethods.so/" /etc/httpd/conf.modules.d/00-base.conf
+ 267  sed -i "s/LoadModule auth_digest_module modules\/mod_auth_digest.so/#LoadModule auth_digest_module modules\/mod_auth_digest.so/" /etc/httpd/conf.modules.d/00-base.conf
+ 268  sed -i "s/LoadModule lbmethod_byrequests_module modules\/mod_lbmethod_byrequests.so/#LoadModule lbmethod_byrequests_module modules\/mod_lbmethod_byrequests.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+ 269  sed -i "s/LoadModule lbmethod_bytraffic_module modules\/mod_lbmethod_bytraffic.so/#LoadModule lbmethod_bytraffic_module modules\/mod_lbmethod_bytraffic.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+ 270  sed -i "s/LoadModule lbmethod_heartbeat_module modules\/mod_lbmethod_heartbeat.so/#LoadModule lbmethod_heartbeat_module modules\/mod_lbmethod_heartbeat.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+ 271  sed -i "s/LoadModule proxy_ajp_module modules\/mod_proxy_ajp.so/#LoadModule proxy_ajp_module modules\/mod_proxy_ajp.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+ 272  sed -i "s/LoadModule proxy_express_module modules\/mod_proxy_express.so/#LoadModule proxy_express_module modules\/mod_proxy_express.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+ 273  sed -i "s/LoadModule proxy_fdpass_module modules\/mod_proxy_fdpass.so/#LoadModule proxy_fdpass_module modules\/mod_proxy_fdpass.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+ 274  sed -i "s/LoadModule proxy_ftp_module modules\/mod_proxy_ftp.so/#LoadModule proxy_ftp_module modules\/mod_proxy_ftp.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+ 275  sed -i "s/LoadModule proxy_hcheck_module modules\/mod_proxy_hcheck.so/#LoadModule proxy_hcheck_module modules\/mod_proxy_hcheck.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+ 276  sed -i "s/LoadModule proxy_scgi_module modules\/mod_proxy_scgi.so/#LoadModule proxy_scgi_module modules\/mod_proxy_scgi.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+ 277  sed -i "s/LoadModule proxy_uwsgi_module modules\/mod_proxy_uwsgi.so/#LoadModule proxy_uwsgi_module modules\/mod_proxy_uwsgi.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+ 278  sed -i "s/LoadModule cgi_module modules\/mod_cgi.so/#LoadModule cgi_module modules\/mod_cgi.so/" /etc/httpd/conf.modules.d/01-cgi.conf
+ 279  localedef -c -f UTF-8 -i en_US en_US.UTF-8
+ 280  rm -f /etc/localtime
+ 281  ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
+ 282  touch /etc/default/locale
+ 283  cat >> /etc/default/locale <<EOF
+ 284  LANG="en_US.utf8"
+ 285  LANGUAGE="en_US:"
+ 286  EOF
+ 287  env LC_ALL=en_US.UTF-8
+ 288  export LC_ALL
+ 289  localectl set-locale LANG=en_US.utf8
+ 290  sed -i "s/AddLanguage es-ES .es-ES/#AddLanguage es-ES .es-ES/" /etc/httpd/conf.d/welcome.conf
+ 291  sed -i "s/AddLanguage zh-CN .zh-CN/#AddLanguage zh-CN .zh-CN/" /etc/httpd/conf.d/welcome.conf
+ 292  sed -i "s/AddLanguage zh-HK .zh-HK/#AddLanguage zh-HK .zh-HK/" /etc/httpd/conf.d/welcome.conf
+ 293  sed -i "s/AddLanguage zh-TW .zh-TW/#AddLanguage zh-TW .zh-TW/" /etc/httpd/conf.d/welcome.conf
+ 294  sed -i "s/LanguagePriority en/#LanguagePriority en/" /etc/httpd/conf.d/welcome.conf
+ 295  sed -i "s/ForceLanguagePriority Fallback/#ForceLanguagePriority Fallback/" /etc/httpd/conf.d/welcome.conf
+ 296  cat >> /etc/httpd/conf.d/ssl.conf <<END
+ 297  <VirtualHost ${SERVER_IP_ADDR}:443>
+ 298  SSLEngine on
+ 299  SSLHonorCipherOrder on
+ 300  SSLProxyVerify none
+ 301  SSLProxyEngine On
+ 302  SSLProxyCheckPeerCN off
+ 303  SSLProxyCheckPeerName off
+ 304  SSLProxyCheckPeerExpire off
+ 305  SSLProtocol all -SSLv2 -SSLv3 -TLSv1
+ 306  SSLCipherSuite "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA 3DES !RC4 !aNULL!eNULL !LOW !MD5 !EXP !PSK !SRP !DSS !3DES !DES"
+ 307  Protocols h2 h2c http/1.1
+ 308  #Protocols h2 http/1.1
+ 309  #Protocols h2
+ 310  #Protocols http/1.1
+ 311  H2TLSWarmUpSize     0
+ 312  H2TLSCoolDownSecs   0
+ 313  #   Server Certificate:
+ 314  SSLCertificateFile /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}/__harriswebworks_com.crt
+ 315  #   Server Private Key:
+ 316  SSLCertificateKeyFile /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}/__harriswebworks_com.key
+ 317  #   Server Certificate Chain:
+ 318  SSLCACertificatePath /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}/
+ 319  SSLCertificateChainFile /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}/__harriswebworks_com.ca-bundle
+ 320  ServerName ${MAGE_DOMAIN}
+ 321  ServerAlias ${MAGE_DOMAIN}
+ 322  ServerPath /home/${MAGE_WEB_USER}/public_html
+ 323  DocumentRoot /home/${MAGE_WEB_USER}/public_html
+ 324  AccessFileName .htaccess
+ 325  <Directory "/home/${MAGE_WEB_USER}/public_html">
+ 326  Options IncludesNOEXEC FollowSymLinks Indexes
+ 327  AllowOverride All
+ 328  Require all granted
+ 329        <IfModule sapi_apache2.c>
+ 330                php_admin_flag engine on
+ 331        </IfModule>
+ 332
+ 333  </Directory>
+ 334  CustomLog /home/${MAGE_WEB_USER}/logs/access_log "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"
+ 335  ErrorLog /home/${MAGE_WEB_USER}/logs/error_log
+ 336  ProxyFCGIBackendType FPM
+ 337  <Location />
+ 338  DirectoryIndex index.php index.html
+ 339  </Location>
+ 340  #SetOutputFilter DEFLATE
+ 341      AddHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/" php
+ 342  #AddHandler "proxy:fcgi://127.0.0.1:9000" php
+ 343  <FilesMatch "\.php$">
+ 344  SetHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/"
+ 345          #SetHandler "proxy:fcgi://127.0.0.1:9000"
+ 346  </FilesMatch>
+ 347  <IfModule mod_rewrite.c>
+ 348  RewriteEngine on
+ 349  RewriteCond %{REQUEST_METHOD} ^TRACE
+ 350  RewriteRule .* - [F]
+ 351  </IfModule>
+ 352  </VirtualHost>
+ 353  END
+ 354  hostnamectl set-hostname ${MAGE_DOMAIN} --static
+ 355  service httpd restart
+ 356  journalctl --unit httpd
+ 357  service httpd restart
+ 358  journalctl --unit httpd
+ 359  service httpd restart
+ 360  curl -i http://localhost:5601
+ 361  cat > /etc/logrotate.d/magento <<END
+ 362  ${MAGE_WEB_ROOT_PATH}/var/log/*.log
+ 363  {
+ 364  su root root
+ 365  create 660 ${MAGE_WEB_USER} ${MAGE_WEB_USER}
+ 366  weekly
+ 367  rotate 2
+ 368  notifempty
+ 369  missingok
+ 370  compress
+ 371  }
+ 372  END
+ 373  cat > /etc/logrotate.d/httpd <<END
+ 374  /home/${MAGE_WEB_USER}/logs/*log {
+ 375      su root root
+ 376      missingok
+ 377      rotate 4
+ 378      compress
+ 379      notifempty
+ 380      sharedscripts
+ 381      delaycompress
+ 382      postrotate
+ 383          /bin/systemctl reload httpd.service > /dev/null 2>/dev/null || true
+ 384      endscript
+ 385  }
+ 386  END
+ 387  REPO_HWW="http://m2testbox.harriswebworks.com"
+ 388  wget -qO /etc/systemd/system/service-status-mail@.service ${REPO_HWW}/scripts/service-status-mail@.service
+ 389  wget -qO /usr/local/bin/service-status-mail.sh ${REPO_HWW}/scripts/service-status-mail.sh
+ 390  echo ${MAGE_ADMIN_EMAIL}
+ 391  sed -i "s/MAGEADMINEMAIL/${MAGE_ADMIN_EMAIL}/" /usr/local/bin/service-status-mail.sh
+ 392  sed -i "s/DOMAINNAME/${MAGE_DOMAIN}/" /usr/local/bin/service-status-mail.sh
+ 393  chmod u+x /usr/local/bin/service-status-mail.sh
+ 394  systemctl daemon-reload
+ 395  cat > /etc/mail/virtusertable <<END
+ 396  root@${MAGE_DOMAIN}  ${MAGE_WEB_USER}
+ 397  END
+ 398  sudo makemap hash /etc/mail/authinfo.db < /etc/mail/authinfo
+ 399  sudo makemap hash /etc/mail/access.db < /etc/mail/access
+ 400  sudo chmod 666 /etc/mail/sendmail.cf
+ 401  sudo m4 /etc/mail/sendmail.mc > /etc/mail/sendmail.cf
+ 402  sudo chmod 644 /etc/mail/sendmail.cf
+ 403  sudo makemap hash /etc/mail/virtusertable < /etc/mail/virtusertable
+ 404  setfacl -Rdm u:${MAGE_WEB_USER}:rwx,g:${MAGE_WEB_USER}:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
+ 405  setfacl -Rm u:${MAGE_WEB_USER}:rwx ${MAGE_WEB_ROOT_PATH%/*}
+ 406  chmod +x /usr/local/bin/*
+ 407  usermod -G apache ${MAGE_WEB_USER}
+ 408  service iptables stop
+ 409  service firewalld stop
+ 410  netstat
+ 411  netstat -tulnp
+ 412  service elasticsearch start
+ 413  netstat -tulnp
+ 414  ps auwx
+ 415  exit
+ 416  ps auwx
+ 417  systemctl enable elasticsearch
+ 418  service elasticsearch start
+ 419  curl -XGET 'http://localhost:9200/_cluster/state?pretty'
+ 420  service elasticsearch start
+ 421  journalctl --unit elasticsearch.service
+ 422  service elasticsearch start
+ 423  journalctl --unit elasticsearch.service
+ 424  service elasticsearch start
+ 425  ps auwx
+ 426  curl -XGET 'http://localhost:9200/_cluster/state?pretty'
+ 427  curl -XGET 'http://172.31.3.173:9200/_cluster/state?pretty'
+ 428  curl -XGET 'http://172.31.3.173:9200/_cluster/state?pretty' >e.txt
+ 429  curl -XGET 'http://172.31.3.173:9200/_cluster/state?pretty' > e.txt
+ 430  systemctl restart elasticsearch
+ 431  ps auwx
+ 432  curl -XGET 'http://172.31.3.173:9200/_cluster/state?pretty' > e1.txt
+ 433  systemctl restart elasticsearch
+ 434  curl -XGET 'http://172.31.3.173:9200/_cluster/state?pretty' > e2.txt
+ 435  curl -XGET 'http://172.31.3.173:9200//_cat/indices?v'
+ 436  curl -XGET 'http://172.31.3.173:9200/_cat/indices?v'
+ 437  systemctl restart elasticsearch
+ 438  journalctl --unit elasticsearch
+ 439  systemctl restart elasticsearch
+ 440  curl -XGET 'http://172.31.3.173:9200/_cluster/state?pretty' > e3.txt
+ 441  systemctl restart elasticsearch
+ 442  curl -XGET '172.31.3.173:9200/_cluster/health?pretty'
+ 443  curl -XPUT 'http://172.31.3.173:9200/store/order/_mapping' -d '
+ 444  {
+ 445     "order":{
+ 446        "_routing":{
+ 447           "required":true
+ 448        }
+ 449     }
+ 450  }'
+ 451  curl -XPUT '172.31.3.173:9200/store/order/_mapping' -d '
+ 452  {
+ 453     "order":{
+ 454        "_routing":{
+ 455           "required":true
+ 456        }
+ 457     }
+ 458  }'
+ 459  curl -XPUT '172.31.3.173:9200/store/order/_mapping' -d '{"order":{"_routing":{"required":true }}}'
+ 460  curl -XPUT '172.31.3.173:9200/store/order/_mapping' -H "Content-Type: application/json" -d '{"order":{"_routing":{"required":true }}}'
+ 461  curl -XPUT '172.31.3.173:9200/store/order/_mapping' -H 'Content-Type: application/json' -d '{"order":{"_routing":{"required":true }}}'
+ 462  systemctl restart elasticsearch
+ 463  curl -XPUT '172.31.3.173:9200/store/order/_mapping' -H 'Content-Type: application/json' -d '{"order":{"_routing":{"required":true }}}'
+ 464  curl -XPUT -H 'Content-Type: application/json' 'http://172.31.3.173:9200/store/order/_mapping'  -d '{"order":{"_routing":{"required":true }}}'
+ 465  curl -XPUT -H 'Content-Type: application/json' 'http://172.31.3.173:9200/store/order/_mapping?include_type_name=true'  -d '{"order":{"_routing":{"required":true }}}'
+ 466  curl -XGET 'http://172.31.3.173:9200/_cat/indices?v'
+ 467  curl -X GET "172.31.3.173:9200/_all?pretty"
+ 468  curl -X GET "172.31.3.173:9200/_all?pretty" > index.txt
+ 469  curl -XPUT -H 'Content-Type: application/json' 'http://172.31.3.173:9200/store/_mapping?include_type_name=true'  -d '{"order":{"_routing":{"required":true }}}'
+ 470  curl -XPUT -H 'Content-Type: application/json' 'http://172.31.3.173:9200/store/order/_mapping?include_type_name=true'  -d '{"order":{"_routing":{"required":true }}}'
+ 471  curl -X PUT "172.31.3.173:9200/florabella
+ 472  curl -X PUT "172.31.3.173:9200/florabella"
+ 473  exit
+ 474  ps auwx
+ 475  free -m
+ 476  exit
+ 477  ps auwx
+ 478  free -m
+ 479  systemctl restart elasticsearch
+ 480  journalctl --unit elasticsearch
+ 481  systemctl restart elasticsearch
+ 482  ps auwx
+ 483  curl -XGET 'http://172.31.3.173:9200/_cat/indices?v'
+ 484  curl -XGET '172.31.3.173:9200/_cluster/health?pretty'
+ 485  free -m
+ 486  exit
+ 487  free -m
+ 488  ps auwx
+ 489  exit
+ 490  curl -X GET "172.31.3.173:9200/_cluster/health?wait_for_status=yellow&timeout=50s&pretty"
+ 491  curl -XGET '172.31.3.173:9200/_cluster/health?pretty'
+ 492  systemctl restart elasticsearch
+ 493  ps auwx
+ 494  curl -XGET '172.31.3.173:9200/_cluster/health?pretty'
+ 495  /usr/share/elasticsearch/bin/elasticsearch
+ 496  /usr/share/elasticsearch/bin/elasticsearch --node.name es-node-1
+ 497  /usr/share/elasticsearch/bin/elasticsearch --help
+ 498  ps auwx
+ 499  curl -XGET '172.31.3.173:9200/_cluster/health?pretty'
+ 500  curl -XGET 'http://172.31.3.173:9200/_cat/indices?v'
+ 501  free -m

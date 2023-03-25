@@ -1,0 +1,56 @@
+Step-1: Check out the mtx file which is responsible for the sync running infinite
+----------------------------------------------------------------------------------
+Site--> Store--> StoreView
+
+> /home/usync/public_html/tmp>
+> ll 1.mtx (this file supposed not to have any content, this just a FLAG)
+
+Step-2: Checkout the naming of your database
+--------------------------------------------
+>> DB Name in the original live and staging site
+  |--> prod_1_06_02_2020_14_43_37 <-- Live site
+  |--> acadia_wp_dev_init  <-- Staging
+
+>> DB name in the new live and staging site
+  |--> acadia_live
+  |--> acadia_staging
+  |--> acadia_sync
+
+>> Check whether the DB name has any hard bindings into the code
+  |--> grep -r -H 'acadia_wp_dev_init' .
+  |--> grep -r -H 'prod_1_06_02_2020_14_43_37' .
+  |--> grep -r -H 'prod_1*' .
+
+>> Check whether the original live site DB password has any hard bindings into the code
+  |--> grep -r -H 'our1@Dbase1250' .
+      |-->No
+
+Step-3: Check the usync logs
+-----------------------------
+> cd /home/usync/public_html/logs
+> ll -a
+-rw-rwxrw-+ 1 usync usync 771951 Aug 31 02:20 database.log
+-rw-rwxrw-+ 1 usync usync  34266 Aug 26 06:17 general.log
+-rw-rwxrw-+ 1 usync usync     27 Mar 19  2016 migration.log
+-rw-rwxrw-+ 1 usync usync   1387 Apr 29  2016 quick.log
+
+1250Acadia94
+
+MYSQL_HOST=localhost;
+MYSSQL_USER=root;
+MYSQL_PASSWORD='Bz@?cuN)UO%utYW18533';
+MYSQL_PORT=3306;
+DBNAME_STAGING=acadia_wp_dev_init;
+DBNAME_PROD=prod_1_06_02_2020_14_43_37;
+
+for i in $(wp_cf7_vdata wp_cf7_vdata_entry wp_commentmeta); do
+  echo "$i";
+done
+
+pt-table-sync h=$MYSQL_HOST,P=$MYSQL_PORT,u=$MYSSQL_USER,p=$MYSQL_PASSWORD,D=$DBNAME_STAGING,t=$i h=$MYSQL_HOST,P=$MYSQL_PORT,u=$MYSSQL_USER,p=$MYSQL_PASSWORD,D=$DBNAME_PROD --execute
+
+
+for i in $(mysql acadia_wp_dev_init -e 'SHOW TABLES' | grep -v "Tables_in" | awk '{print $1}'); do
+  echo "Syncing TABLE: $i--> to --> $DBNAME_PROD";
+  pt-table-sync h=$MYSQL_HOST,P=$MYSQL_PORT,u=$MYSSQL_USER,p=$MYSQL_PASSWORD,D=$DBNAME_STAGING,t=$i h=$MYSQL_HOST,P=$MYSQL_PORT,u=$MYSSQL_USER,p=$MYSQL_PASSWORD,D=$DBNAME_PROD --execute
+done

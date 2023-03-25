@@ -1,0 +1,184 @@
+STEP-1: Container Creation
+------------------------------
+vzctl create 162 --ostemplate centos-8-x86_64
+vzlist -a
+vzctl set 162 --ipadd 172.31.4.163 --hostname cnpimdev.harriswebworks.com --save
+vim /etc/vz/conf/162.conf
+vzctl start 162
+
+STEP-2: Gathering relevant info from old container
+-------------------------------------------------
+ root password: WhichOne12
+ Other DB info:
+ ----------------
+ > vim /home/cnpim/public_html/pim-community-standard/app/config/parameters.yml
+ database_driver: pdo_mysql
+ database_host: localhost
+ database_port: null
+ database_name: akeneo_pim
+ database_user: akeneo_pim
+ database_password: akeneo_pim
+
+ Admin information
+ -----------------
+ usrename: cnadmin
+ password: TraCK942AR
+
+ Basecamp
+ ---------
+ PIM
+SFTP creds
+cnpim.harriswebworks.com
+Server: cnpim.harriswebworks.com (3.212.68.198)
+Port: 6666
+Userid: cnpim
+Password: ts*C!VMKQZ0^
+
+Userid: cnadmin
+Password TraCK942AR
+
+httpd info
+----------
+<VirtualHost 172.31.15.121:80>
+ServerName cnpim.harriswebworks.com
+ServerAlias cnpim.harriswebworks.com
+DocumentRoot /home/cnpim/public_html/pim-community-standard/web
+ErrorLog /home/cnpim/logs/error_log
+CustomLog /home/cnpim/logs/access_log combined
+
+ProxyFCGIBackendType FPM
+<Location />
+DirectoryIndex index.php index.html
+</Location>
+SetOutputFilter DEFLATE
+
+AddHandler "proxy:fcgi://127.0.0.1:9000" php
+<FilesMatch "\.php$">
+    SetHandler "proxy:fcgi://127.0.0.1:9000"
+</FilesMatch>
+
+<Directory /home/cnpim/public_html>
+  Options IncludesNOEXEC FollowSymLinks
+  Require all granted
+  AllowOverride All
+</Directory>
+
+</virtualhost>
+
+
+ssl.conf
+----------
+#   Server Certificate:
+SSLCertificateFile /etc/httpd/conf.d/ssl/cnpim/ssl.cert
+
+#   Server Private Key:
+SSLCertificateKeyFile /etc/httpd/conf.d/ssl/cnpim/ssl.pk
+
+#   Server Certificate Chain:
+SSLCACertificatePath /etc/httpd/conf.d/ssl/cnpim
+
+SSLCertificateChainFile /etc/httpd/conf.d/ssl/cnpim/bundle.crt
+
+
+ServerName cnpim.harriswebworks.com
+ServerAlias cnpim.harriswebworks.com
+ServerPath /home/cnpim/public_html
+DocumentRoot /home/cnpim/public_html/pim-community-standard/web
+
+AccessFileName .htaccess
+
+<Directory "/home/cnpim/public_html">
+Options IncludesNOEXEC FollowSymLinks Indexes
+AllowOverride All
+Require all granted
+
+      <IfModule sapi_apache2.c>
+              php_admin_flag engine on
+      </IfModule>
+      <IfModule mod_php5.c>
+              php_admin_flag engine on
+      </IfModule>
+</Directory>
+
+CustomLog /home/cnpim/logs/access_log "%{X-Forwarded-For}i %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"
+ErrorLog /home/cnpim/logs/error_log
+
+
+Zipped files
+-------------
+(i) doc root: cnpim.zip
+(ii) db : akeneo_pim_sql.zip
+
+
+
+pimdev
+-------
+db:
++++++
+database_driver: pdo_mysql
+database_host: localhost
+database_port: null
+database_name: akeneo_pim
+database_user: akeneo_pim
+database_password: akeneo_pim
+
+
+
+
+
+Major commands in terminal
+---------------------------
+@root
+-----
+> apachectl configtest
+> apachectl graceful
+> cd /etc/systemd/system/multi-user.target.wants/
+> ls
+> type pim_job_queue\@1.service
+> systemctl status pim_job_queue@1
+> systemctl status pim_job_queue@1 -l
+> ps auxw|grep pim
+> grep OOM messages
+> cd public_html/pim-community-standard/web/cs
+> vi app/config/security.yml
+
+> vim /etc/systemd/system/pim_job_queue@.service
+[Unit]
+Description=Akeneo PIM Job Queue Service (#%i)
+
+[Service]
+Type=simple
+User=cnpim
+Group=cnpim
+WorkingDirectory=/home/cnpim/public_html/pim-community-standard/
+ExecStart=/home/cnpim/public_html/pim-community-standard/bin/console akeneo:batch:job-queue-consumer-daemon --env=prod
+After=httpd.service
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
+> systemctl daemon-reload
+
+@cnpim
+------
+cd /home/cnpim/public_html/pim-community-standard
+rm -rf ./var/cache/*
+php bin/console akeneo:batch:publish-job-to-queue my_job_code --env=prod
+php bin/console cache:clear --env=prod
+php bin/console cache:clear --no-warmup --env=prod
+php bin/console cache:clear --no-warmup --env=prodphp bin/console cache:clear --no-warmup --env=prod
+   46  php bin/console cache:clear --no-warmup --env=prod
+   php /var/www/html/akeneo/pim-community-standard/bin/console akeneo:batch:job-queue-consumer-daemon --env=prod
+   54  bin/console akeneo:batch:job-queue-consumer-daemon --env=prod
+   php bin/console cache:clear --no-warmup --env=prod
+   php /home/cnpim/public_html/pim-community-standard/bin/console akeneo:batch:job-queue-consumer-daemon --env=prod --run-once
+   vim web/app_dev.php
+   php bin/console akeneo:elasticsearch:reset-indexes --env=prod
+
+cron - cnpim user
+-----------------
+0 23  *    *    *    /usr/bin/php /home/cnpim/public_html/pim-community-standard/bin/console pim:completeness:calculate --env=prod > /home/cnpim/public_html/pim-community-standard/var/logs/calculate_completeness.log 2>&1
+0 5   *    *    *    /usr/bin/php /home/cnpim/public_html/pim-community-standard/bin/console pim:versioning:refresh --env=prod > /home/cnpim/public_html/pim-community-standard/var/logs/refresh_versioning.log 2>&1
+0 22  *    *    *    /usr/bin/php /home/cnpim/public_html/pim-community-standard/bin/console pim:volume:aggregate --env=prod > /home/cnpim/public_html/pim-community-standard/var/logs/volume_aggregate.log 2>&1

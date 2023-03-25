@@ -1,0 +1,5 @@
+How to fix – ping: socket: Operation not permitted
+https://www.incredigeek.com/home/how-to-fix-ping-socket-operation-not-permitted/
+which ping
+sudo chmod 4711 /usr/bin/ping
+

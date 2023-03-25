@@ -1,0 +1,1135 @@
+cat >> /etc/resolv.conf <<END
+nameserver 172.31.0.2
+END
+
+yum install -y dnf
+dnf install 'dnf-command(config-manager)' -y
+yum remove -y mariadb* mariadb-libs ftp
+mkdir -p /root/mage
+echo "yes" > /root/mage/.prepared
+
+
+#PART-A1: Defining the Global varibales
+MAGE_DOMAIN_WP=acadev2.harriswebworks.com
+MAGE_WEB_USER_WP=acadev2
+MAGE_WEB_ROOT_PATH_WP="/home/${MAGE_WEB_USER_WP}/public_html"
+MAGE_DB_NAME_WP=acadev2_staging
+MAGE_DB_USER_NAME_WP=acadia
+
+MAGE_DOMAIN_PIM=pimdev.harriswebworks.com
+MAGE_WEB_USER_PIM=pimdev
+MAGE_WEB_ROOT_PATH_PIM="/home/${MAGE_WEB_USER_PIM}/public_html"
+MAGE_DB_NAME_PIM=akeneo_pim
+MAGE_DB_USER_NAME_PIM=akeneo_pim
+
+MAGE_DB_HOST=localhost
+
+#MAGE_ADMIN_PATH_PIM=user
+#MAGE_ADMIN_LOGIN_PIM=cnadmin
+#MAGE_ADMIN_PASS_PIM="TraCK942AR"
+
+MAGE_ADMIN_EMAIL=jarafat@harriswebworks.com
+MAGE_LOCALE=en_US
+MAGE_CURRENCY=USD
+MAGE_TIMEZONE=America/New_York
+CENTOS_VERSION="8"
+PHP_VERSION=7.2
+SSH_PORT=7575
+SFTP_PORT=$SSH_PORT
+
+REPO_HWW="http://m2testbox.harriswebworks.com"
+REPO_CODEIT="https://repo.codeit.guru/codeit.el"
+REPO_PERCONA="https://repo.percona.com/yum/percona-release-latest.noarch.rpm"
+REPO_MYSQL="https://dev.mysql.com/get/mysql80-community-release-el7-1.noarch.rpm"
+REPO_REMI="http://rpms.famillecollet.com/enterprise/remi-release-${CENTOS_VERSION}.rpm"
+REPO_FAN="http://www.city-fan.org/ftp/contrib/yum-repo/city-fan.org-release-2-1.rhel7.noarch.rpm"
+REPO_MAGE_TMP="https://raw.githubusercontent.com/emirajbbd/Magento-2-server-installation-1/master/"
+
+EXTRA_PACKAGES="autoconf automake dejavu-fonts-common dejavu-sans-fonts libtidy libpcap gettext-devel recode boost boost-build boost-jam double-conversion fastlz fribidi gflags glog oniguruma tbb ed lz4 libyaml libdwarf bind-utils e2fsprogs svn screen gcc iptraf inotify-tools iptables smartmontools net-tools mlocate unzip vim wget curl sudo bc mailx  proftpd logrotate git patch ipset strace rsyslog ncurses-devel GeoIP GeoIP-devel geoipupdate openssl-devel ImageMagick libjpeg-turbo-utils pngcrush jpegoptim moreutils lsof net-snmp net-snmp-utils xinetd python3-virtualenv python3-wheel-wheel python3-pip python3-devel ncftp postfix augeas-libs libffi-devel mod_ssl dnf-automatic yum-plugin-versionlock sysstat libuuid-devel uuid-devel attr iotop expect postgresql-libs unixODBC gcc-c++ telnet  sendmail sendmail-devel lrzsz sendmail-cf rsyslog rsync cronie which zip unzip wget man cyrus-sasl-plain cppunit mod_proxy_html screen"
+
+PHP_PACKAGES=(cli common fpm opcache gd curl mbstring bcmath soap mcrypt mysqlnd pdo xml xmlrpc intl gmp gettext-gettext phpseclib recode symfony-class-loader symfony-common tcpdf tcpdf-dejavu-sans-fonts tidy snappy lz4 maxminddb phpiredis sodium )
+PHP_PECL_PACKAGES=(pecl-redis pecl-lzf pecl-geoip pecl-zip pecl-memcache pecl-oauth pecl-imagick pecl-igbinary pecl-apcu)
+PERL_MODULES=(LWP-Protocol-https Config-IniFiles libwww-perl CPAN Template-Toolkit Time-HiRes ExtUtils-CBuilder ExtUtils-Embed ExtUtils-MakeMaker TermReadKey DBI DBD-MySQL Digest-HMAC Digest-SHA1 Test-Simple Moose Net-SSLeay devel)
+
+SPHINX="http://sphinxsearch.com/files/sphinx-2.2.11-1.rhel7.x86_64.rpm"
+
+MYSQL_TUNER="https://raw.githubusercontent.com/major/MySQLTuner-perl/master/mysqltuner.pl"
+MYSQL_TOP="https://raw.githubusercontent.com/magenx/Magento-mysql/master/mytop"
+
+ELKVER="7.6.2"
+ELKREPO="7.x"
+
+yum -y install epel-release
+yum -y install pwgen time bzip2 tar vnstat
+sed -i 's/Interface \"eth0\"/Interface \"venet0\"/' /etc/vnstat.conf
+echo "N/A" > /root/mage/.systest
+
+#iptable and firewalld
+service iptables stop >/dev/null 2>&1
+#service iptables start >/dev/null 2>&1
+service firewalld stop >/dev/null 2>&1
+systemctl disable firewalld >/dev/null 2>&1
+systemctl mask --now firewalld
+echo "Off" > /root/mage/.firewall
+
+
+#SSH
+grep "Port 22" /etc/ssh/sshd_config
+sed -i "s/.*LoginGraceTime.*/LoginGraceTime 30/" /etc/ssh/sshd_config
+sed -i 's/\#PermitRootLogin yes/PermitRootLogin yes/' /etc/ssh/sshd_config
+sed -i 's/\PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+sed -i "s/.*MaxAuthTries.*/MaxAuthTries 6/" /etc/ssh/sshd_config
+sed -i "s/.*X11Forwarding.*/X11Forwarding no/" /etc/ssh/sshd_config
+sed -i "s/.*AllowTCPForwarding.*/AllowTCPForwarding no/" /etc/ssh/sshd_config
+sed -i "s/.*PrintLastLog.*/PrintLastLog yes/" /etc/ssh/sshd_config
+sed -i "s/.*TCPKeepAlive.*/TCPKeepAlive yes/" /etc/ssh/sshd_config
+sed -i "s/.*ClientAliveInterval.*/ClientAliveInterval 720/" /etc/ssh/sshd_config
+sed -i "s/.*ClientAliveCountMax.*/ClientAliveCountMax 120/" /etc/ssh/sshd_config
+sed -i "s/.*UseDNS.*/UseDNS no/" /etc/ssh/sshd_config
+sed -i "s/.*PrintMotd.*/PrintMotd yes/" /etc/ssh/sshd_config
+sed -i 's/\/usr\/libexec\/openssh\/sftp-server/\/usr\/libexec\/openssh\/sftp-server -l INFO/' /etc/ssh/sshd_config
+sed -i "s/.*Port 22/Port ${SSH_PORT}/g" /etc/ssh/sshd_config
+
+sshd -t
+echo $?
+curl -o /etc/motd -s ${REPO_HWW}/motd
+systemctl restart sshd.service
+ss -tlp | grep sshd
+
+
+#sysupdate
+dnf -y upgrade
+dnf -y update
+dnf install -y dnf-utils
+dnf module enable -y perl:5.26
+dnf config-manager --set-enabled PowerTools
+dnf repolist
+dnf -y install openssl httpd httpd-devel file git-core gcc jpegoptim optipng zlib-devel gcc make expat-devel pcre-devel htop
+yum -y install ${REPO_FAN}
+sed -i '0,/gpgkey/s//includepkgs=curl libmetalink libpsl libcurl libssh2\n&/' /etc/yum.repos.d/city-fan.org.repo
+yum install -y yum-utils
+yum-config-manager --enable city-fan.org
+yum repolist
+dnf  -y install ${EXTRA_PACKAGES}
+dnf  -y install ${PERL_MODULES[@]/#/perl-}
+dnf install -y http://repo.okay.com.mx/centos/8/x86_64/release/libwebp-tools-1.0.0-1.el8.x86_64.rpm
+
+#vnstat
+systemctl enable vnstat  >/dev/null 2>&1
+service vnstat start  >/dev/null 2>&1
+netstat -i
+vnstat -i venet0
+
+#saslauthd
+chkconfig saslauthd on
+service saslauthd start
+saslauthd -v
+
+systemctl is-enabled httpd
+systemctl is-active httpd
+chkconfig httpd on
+which htpasswd
+echo "yes" > /root/mage/.sysupdate
+
+#Percona
+dnf install -y https://cbs.centos.org/kojifiles/packages/jemalloc/5.2.1/2.el8/x86_64/jemalloc-5.2.1-2.el8.x86_64.rpm
+dnf install -y ${REPO_PERCONA}
+rpm -q percona-release
+dnf module list
+dnf module list --enabled
+dnf module disable -y mysql >/dev/null 2>&1
+percona-release setup ps57 >/dev/null 2>&1
+dnf install -y Percona-Server-server-57 Percona-Server-client-57
+rpm -q Percona-Server-server-57 Percona-Server-client-57
+
+#mysqld-01
+---------------
+cp /usr/lib/systemd/system/mysqld.service /etc/systemd/system/mysqld.service
+sed -i "s/^Restart=always/Restart=on-failure/" /etc/systemd/system/mysqld.service
+sed -i "/^After=syslog.target.*/a OnFailure=service-status-mail@%n.service" /etc/systemd/system/mysqld.service
+sed -i "/^OnFailure.*/a StartLimitBurst=5" /etc/systemd/system/mysqld.service
+sed -i "/^StartLimitBurst.*/a StartLimitIntervalSec=33" /etc/systemd/system/mysqld.service
+sed -i "/Restart=on-failure/a RestartSec=5" /etc/systemd/system/mysqld.service
+sed -i "s/LimitNOFILE = 5000/LimitNOFILE = 65535/" /etc/systemd/system/mysqld.service
+ll /etc/systemd/system
+systemctl disable mysqld # added by me, it will disable the exisiting mysqld and help me to connect to the modified mysqld
+systemctl daemon-reload
+systemctl enable mysqld
+ll /etc/systemd/system
+
+wget -O /etc/my.cnf https://raw.githubusercontent.com/magenx/magento-mysql/master/my.cnf/my.cnf
+rpm -qa | grep -w bc || dnf -y install bc
+IBPS=$(echo "0.5*$(awk '/MemTotal/ { print $2 / (1024*1024)}' /proc/meminfo | cut -d'.' -f1)" | bc | xargs printf "%1.0f")
+sed -i "s/innodb = force/#innodb = force/" /etc/my.cnf
+sed -i "s/#query_cache_type = 2/query_cache_type = 0/" /etc/my.cnf
+sed -i "s/#query_cache_size = 128M/query_cache_size = 0\nquery_cache_limit = 2M/" /etc/my.cnf
+sed -i "s/#skip-character-set-client-handshake/#skip-character-set-client-handshake\nexplicit_defaults_for_timestamp=1/" /etc/my.cnf
+sed -i "s/innodb_buffer_pool_instances = 4/innodb_buffer_pool_instances = ${IBPS}/" /etc/my.cnf
+sed -i "s/innodb_buffer_pool_size = 4G/innodb_buffer_pool_size = ${IBPS}G/" /etc/my.cnf
+sed -i "s/innodb_buffer_pool_size = ${IBPS}G/innodb_buffer_pool_size = ${IBPS}G\ninnodb_ft_min_token_size=2\nft_min_word_len=2/" /etc/my.cnf
+
+dnf -y install percona-toolkit percona-xtrabackup-24
+
+wget -O /usr/local/bin/mysqltuner ${MYSQL_TUNER}
+wget -O /usr/local/bin/mytop ${MYSQL_TOP}
+chmod +x /usr/local/bin/mytop
+mytop --prompt
+
+cat > /etc/sysconfig/mysql <<EOF
+LD_PRELOAD=/usr/lib64/libjemalloc.so.2
+EOF
+
+#Proxysql
+cat > /etc/yum.repos.d/proxysql.repo <<EOF
+[proxysql_repo]
+name= ProxySQL YUM repository
+baseurl=https://repo.proxysql.com/ProxySQL/proxysql-2.0.x/centos/8
+gpgcheck=1
+gpgkey=https://repo.proxysql.com/ProxySQL/repo_pub_key
+EOF
+
+yum repolist
+
+dnf -y install proxysql
+systemctl disable proxysql
+echo "yes" > /root/mage/.percona
+
+#PHP
+dnf install -y ${REPO_REMI}
+dnf repolist
+dnf module enable php:remi-${PHP_VERSION} -y
+dnf module list --enabled
+dnf config-manager --set-enabled remi
+dnf help config-manager
+rpm -q remi-release
+dnf -y  install php ${PHP_PACKAGES[@]/#/php-} ${PHP_PECL_PACKAGES[@]/#/php-}
+rpm -q php
+
+php-fpm-01
+-----------
+cp /usr/lib/systemd/system/php-fpm.service /etc/systemd/system/php-fpm.service
+sed -i "s/PrivateTmp=true/PrivateTmp=false/" /etc/systemd/system/php-fpm.service
+sed -i "/^After.*/a OnFailure=service-status-mail@%n.service" /etc/systemd/system/php-fpm.service
+sed -i "/\[Install\]/i Restart=on-failure\nRestartSec=5\n" /etc/systemd/system/php-fpm.service
+sed -i "/^OnFailure.*/a StartLimitBurst=5" /etc/systemd/system/php-fpm.service
+sed -i "/^StartLimitBurst.*/a StartLimitIntervalSec=33" /etc/systemd/system/php-fpm.service
+systemctl daemon-reload
+systemctl enable php-fpm
+systemctl enable httpd
+rpm -qa 'php*' | awk '{print "  Installed: ",$1}'
+php -m
+php -m|wc -l
+echo "yes" > /root/mage/.php
+
+#Redis
+yum install -y redis pcre-devel ImageMagick ImageMagick-devel
+systemctl enable redis
+#systemctl start redis && redis-cli config set save "" && redis-cli config set appendonly no && redis-cli config set maxmemory 256mb && redis-cli config set maxmemory-policy allkeys-lru && redis-cli config rewrite && redis-cli shutdown  && systemctl start redis && redis-cli config get save
+echo "yes" > /root/mage/.redis
+
+#ES--. RPM CHEATSHETT https://guides.library.illinois.edu/data_encryption/gpgcheatsheet
+dnf -y install java
+rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+ls /etc/pki/rpm-gpg/
+rpm -q gpg-pubkey --qf '%{NAME}-%{VERSION}-%{RELEASE}\t%{SUMMARY}\n'
+rpm -qi gpg-pubkey-\* | grep -E ^Packager
+
+
+cat > /etc/yum.repos.d/elastic.repo << EOF
+[elasticsearch-${ELKREPO}]
+name=Elasticsearch repository for ${ELKREPO} packages
+baseurl=https://artifacts.elastic.co/packages/${ELKREPO}/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=0
+autorefresh=1
+type=rpm-md
+EOF
+
+dnf -y install --enablerepo=elasticsearch-${ELKREPO} elasticsearch-${ELKVER}
+dnf module list --enabled
+rpm  -q elasticsearch
+
+sed -i "s/.*network.host.*/network.host: 127.0.0.1/" /etc/elasticsearch/elasticsearch.yml
+sed -i "s/.*http.port.*/http.port: 9200/" /etc/elasticsearch/elasticsearch.yml
+cat >> /etc/elasticsearch/elasticsearch.yml <<END
+indices.query.bool.max_clause_count: 10024
+END
+
+sed -i "s/-Xms.*/-Xms1g/" /etc/elasticsearch/jvm.options
+sed -i "s/-Xmx.*/-Xmx1g/" /etc/elasticsearch/jvm.options
+chown -R :elasticsearch /etc/elasticsearch/*
+
+cd /usr/share/elasticsearch
+bin/elasticsearch-plugin install analysis-phonetic
+bin/elasticsearch-plugin install analysis-icu
+
+systemctl daemon-reload
+systemctl status elasticsearch
+systemctl enable elasticsearch.service
+systemctl restart elasticsearch.service
+curl -XGET http://localhost:9200
+curl localhost:9200/_cat/health
+curl -XGET localhost:9200/_cat/indices
+
+#PHP-Tweaking
+--------------
+#php-opcache
+-------------
+cat > /etc/php.d/10-opcache.ini <<END
+zend_extension=opcache.so
+opcache.enable = 1
+opcache.enable_cli = 1
+opcache.memory_consumption = 512
+opcache.interned_strings_buffer = 8
+opcache.max_accelerated_files = 100000
+opcache.max_wasted_percentage = 5
+;opcache.use_cwd = 1
+opcache.validate_timestamps = 0
+;opcache.revalidate_freq = 2
+;opcache.validate_permission= 1
+;opcache.validate_root= 1
+opcache.file_update_protection = 2
+opcache.revalidate_path = 0
+opcache.save_comments = 1
+opcache.load_comments = 1
+opcache.fast_shutdown = 1
+opcache.enable_file_override = 0
+opcache.optimization_level = 0xffffffff
+opcache.inherited_hack = 1
+opcache.blacklist_filename=/etc/php.d/opcache-default.blacklist
+opcache.max_file_size = 0
+opcache.consistency_checks = 0
+opcache.force_restart_timeout = 60
+opcache.error_log = "/var/log/php-fpm/opcache.log"
+opcache.log_verbosity_level = 1
+opcache.preferred_memory_model = ""
+opcache.protect_memory = 0
+;opcache.mmap_base = ""
+;opcache.validate_root=0
+;opcache.restrict_api=
+;opcache.file_cache=
+;opcache.file_cache_only=0
+;opcache.file_cache_consistency_checks=1
+;opcache.file_cache_fallback=1
+;opcache.validate_permission=0
+opcache.huge_code_pages=1
+END
+
+
+#php.ini
+--------
+cp /etc/php.ini /etc/php.ini.BACK
+sed -i 's/^\(max_execution_time = \)[0-9]*/\17200/' /etc/php.ini
+sed -i 's/^\(max_input_time = \)[0-9]*/\17200/' /etc/php.ini
+sed -i 's/^\(memory_limit = \)[0-9]*M/\12048M/' /etc/php.ini
+sed -i 's/^\(post_max_size = \)[0-9]*M/\164M/' /etc/php.ini
+sed -i 's/^\(upload_max_filesize = \)[0-9]*M/\164M/' /etc/php.ini
+sed -i 's/expose_php = On/expose_php = Off/' /etc/php.ini
+sed -i 's/;realpath_cache_size = 16k/realpath_cache_size = 512k/' /etc/php.ini
+sed -i 's/;realpath_cache_ttl = 120/realpath_cache_ttl = 86400/' /etc/php.ini
+sed -i 's/short_open_tag = Off/short_open_tag = On/' /etc/php.ini
+sed -i 's/; max_input_vars = 1000/max_input_vars = 50000/' /etc/php.ini
+sed -i 's/session.gc_maxlifetime = 1440/session.gc_maxlifetime = 28800/' /etc/php.ini
+sed -i 's/mysql.allow_persistent = On/mysql.allow_persistent = Off/' /etc/php.ini
+sed -i 's/mysqli.allow_persistent = On/mysqli.allow_persistent = Off/' /etc/php.ini
+sed -i 's/pm = dynamic/pm = ondemand/' /etc/php-fpm.d/www.conf
+sed -i 's/;pm.max_requests = 500/pm.max_requests = 10000/' /etc/php-fpm.d/www.conf
+sed -i 's/pm.max_children = 50/pm.max_children = 1000/' /etc/php-fpm.d/www.conf
+sed -i 's/;session.serialize_handler=igbinary/session.serialize_handler=igbinary/' /etc/php.d/40-igbinary.ini
+
+echo "*         soft    nofile          700000" >> /etc/security/limits.conf
+echo "*         hard    nofile          1000000" >> /etc/security/limits.conf
+
+echo "Yes" > /root/mage/.php-tweaking
+
+
+#WebUser Creation- WP
+#----------------------
+mkdir -p ${MAGE_WEB_ROOT_PATH_WP} && cd $_
+useradd -d ${MAGE_WEB_ROOT_PATH_WP%/*} -s /usr/bin/bash ${MAGE_WEB_USER_WP}
+MAGE_WEB_USER_PASS_WP=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)   #problem
+echo "${MAGE_WEB_USER_WP}:${MAGE_WEB_USER_PASS_WP}"  | chpasswd
+chmod 755 /home/${MAGE_WEB_USER_WP}
+chown -R ${MAGE_WEB_USER_WP}:${MAGE_WEB_USER_WP} ${MAGE_WEB_ROOT_PATH_WP%/*}
+chmod 2777 ${MAGE_WEB_ROOT_PATH_WP}
+setfacl -Rdm u:${MAGE_WEB_USER_WP}:rwx,g:${MAGE_WEB_USER_WP}:rwx,g::rw-,o::- ${MAGE_WEB_ROOT_PATH_WP}
+
+
+cat >> /root/mage/.mage_index <<END
+webshop ${MAGE_DOMAIN_WP}    ${MAGE_WEB_ROOT_PATH_WP}    ${MAGE_WEB_USER_WP}   ${MAGE_WEB_USER_PASS_WP}
+END
+
+
+#WebUser Creation- PIM
+#----------------------
+mkdir -p ${MAGE_WEB_ROOT_PATH_PIM} && cd $_
+useradd -d ${MAGE_WEB_ROOT_PATH_PIM%/*} -s /usr/bin/bash ${MAGE_WEB_USER_PIM}
+MAGE_WEB_USER_PASS_PIM=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)   #problem
+echo "${MAGE_WEB_USER_PIM}:${MAGE_WEB_USER_PASS_PIM}"  | chpasswd
+chmod 755 /home/${MAGE_WEB_USER_PIM}
+chown -R ${MAGE_WEB_USER_PIM}:${MAGE_WEB_USER_PIM} ${MAGE_WEB_ROOT_PATH_PIM%/*}
+chmod 2777 ${MAGE_WEB_ROOT_PATH_PIM}
+setfacl -Rdm u:${MAGE_WEB_USER_PIM}:rwx,g:${MAGE_WEB_USER_PIM}:rwx,g::rw-,o::- ${MAGE_WEB_ROOT_PATH_PIM}
+
+echo "alias dir='ls -al'
+export PS1='root@${MAGE_WEB_USER_PIM}] \$PWD> '
+alias quota='quota -s'
+HISTFILE=~/.bash_history
+" >> /root/.bash_profile
+source /root/.bash_profile
+
+cat >> /root/mage/.mage_index <<END
+webshop ${MAGE_DOMAIN_PIM}    ${MAGE_WEB_ROOT_PATH_PIM}    ${MAGE_WEB_USER_PIM}   ${MAGE_WEB_USER_PASS_PIM}
+END
+
+#composer
+---------
+curl -sS https://getcomposer.org/installer | php
+mv composer.phar /usr/local/bin/composer
+
+#mysqld-02
+------------
+systemctl status mysqld.service
+systemctl start mysqld.service
+MYSQL_ROOT_PASS_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
+MYSQL_ROOT_PASS="${MYSQL_ROOT_PASS_GEN}${RANDOM}"
+MYSQL_ROOT_TMP_PASS=$(grep 'temporary password is generated for' /var/log/mysqld.log | awk '{print $NF}')
+mysql --connect-expired-password -u root -p${MYSQL_ROOT_TMP_PASS}  <<EOMYSQL
+ALTER USER 'root'@'localhost' IDENTIFIED BY "${MYSQL_ROOT_PASS}";
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
+exit
+EOMYSQL
+
+cat > /root/.mytop <<END
+user=root
+pass=${MYSQL_ROOT_PASS}
+db=mysql
+END
+cat > /root/.my.cnf <<END
+[client]
+user=root
+password="${MYSQL_ROOT_PASS}"
+END
+
+##DB_WP
+MAGE_DB_PASS_WP_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
+MAGE_DB_PASS_WP="${MAGE_DB_PASS_WP_GEN}${RANDOM}"
+mysql <<EOMYSQL
+CREATE USER '${MAGE_DB_USER_NAME_WP}'@'${MAGE_DB_HOST}' IDENTIFIED BY '${MAGE_DB_PASS_WP}';
+CREATE DATABASE ${MAGE_DB_NAME_WP};
+GRANT ALL PRIVILEGES ON ${MAGE_DB_NAME_WP}.* TO '${MAGE_DB_USER_NAME_WP}'@'${MAGE_DB_HOST}' WITH GRANT OPTION;
+exit
+EOMYSQL
+
+##DB_PIM
+MAGE_DB_PASS_PIM_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
+MAGE_DB_PASS_PIM="${MAGE_DB_PASS_PIM_GEN}${RANDOM}"
+mysql <<EOMYSQL
+CREATE USER '${MAGE_DB_USER_NAME_PIM}'@'${MAGE_DB_HOST}' IDENTIFIED BY '${MAGE_DB_PASS_PIM}';
+CREATE DATABASE ${MAGE_DB_NAME_PIM};
+GRANT ALL PRIVILEGES ON ${MAGE_DB_NAME_PIM}.* TO '${MAGE_DB_USER_NAME_PIM}'@'${MAGE_DB_HOST}' WITH GRANT OPTION;
+exit
+EOMYSQL
+
+mysql
+|--> SELECT user FROM mysql. user;
+|--> SHOW GRANTS FOR 'root'@'localhost';
+|--> SHOW GRANTS FOR 'akeneo_pim'@'localhost';
+
+mytop
+cat >> /root/mage/.mage_index <<END
+wp_database   ${MAGE_DB_HOST}   ${MAGE_DB_NAME_WP}   ${MAGE_DB_USER_NAME_WP}   ${MAGE_DB_PASS_WP}  ${MYSQL_ROOT_PASS}
+pim_database   ${MAGE_DB_HOST}   ${MAGE_DB_NAME_PIM}   ${MAGE_DB_USER_NAME_PIM}   ${MAGE_DB_PASS_PIM}  ${MYSQL_ROOT_PASS}
+END
+
+echo "yes" > /root/mage/.database
+
+#httpd
+#------
+git clone https://github.com/h5bp/server-configs-apache.git
+mkdir /etc/httpd/customcnf && mv server-configs-apache/* /etc/httpd/customcnf/
+
+mkdir -p /home/${MAGE_WEB_USER_WP}/logs
+mkdir -p /home/${MAGE_WEB_USER_PIM}/logs
+
+sed -i "s/User apache/User ${MAGE_WEB_USER_PIM}/" /etc/httpd/conf/httpd.conf
+sed -i "s/Group apache/Group ${MAGE_WEB_USER_PIM}/" /etc/httpd/conf/httpd.conf
+
+SERVER_IP_ADDR=$(hostname -i)
+
+cat >> /etc/httpd/conf/httpd.conf <<END
+#Custom httpd settings
+
+
+IncludeOptional  customcnf/src/cross-origin/images.conf
+IncludeOptional  customcnf/src/cross-origin/web_fonts.conf
+IncludeOptional  customcnf/src/cross-origin/resource_timing.conf
+IncludeOptional  customcnf/src/media_types/media_types.conf
+IncludeOptional  customcnf/src/media_types/character_encodings.conf
+IncludeOptional  customcnf/src/security/x-powered-by.conf
+IncludeOptional  customcnf/src/security/server_software_information.conf
+#IncludeOptional  customcnf/src/web_performance/compression.conf
+IncludeOptional  customcnf/src/web_performance/etags.conf
+IncludeOptional  customcnf/src/web_performance/cache_expiration.conf
+
+
+<IfModule mod_brotli.c>
+	AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/xml text/css text/javascript application/x-javascript application/javascript application/json application/x-font-ttf application/vnd.ms-fontobject image/x-icon
+	BrotliFilterNote Input brotli_input_info
+	BrotliFilterNote Output brotli_output_info
+	BrotliFilterNote Ratio brotli_ratio_info
+
+	#LogFormat '"%r" %{brotli_output_info}n/%{brotli_input_info}n (%{brotli_ratio_info}n%%)' brotli
+	#CustomLog "|/usr/sbin/rotatelogs /home/${MAGE_WEB_USER_PIM}/logs/brotli_log.%Y%m%d 86400" brotli
+	#Don't compress content which is already compressed
+	SetEnvIfNoCase Request_URI 	\.(gif|jpe?g|png|swf|woff|woff2) no-brotli dont-vary
+	# Make sure proxies don't deliver the wrong content
+	Header append Vary User-Agent env=!dont-vary
+</IfModule>
+<IfModule mod_deflate.c>
+	AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/x-javascript application/javascript application/json application/x-font-ttf application/vnd.ms-fontobject image/x-icon
+#
+#	DeflateFilterNote Input input_info
+#	DeflateFilterNote Output output_info
+#	DeflateFilterNote Ratio ratio_info
+#	LogFormat '"%r" %{output_info}n/%{input_info}n (%{ratio_info}n%%)' deflate
+#	CustomLog "|/usr/sbin/rotatelogs /home/${MAGE_WEB_USER_PIM}/logs/deflate_log.%Y%m%d 86400" deflate
+#	#Don't compress content which is already compressed
+#	SetEnvIfNoCase Request_URI \ \.(gif|jpe?g|png|swf|woff|woff2) no-gzip dont-vary
+#	# Make sure proxies don't deliver the wrong content
+#	Header append Vary User-Agent env=!dont-vary
+</IfModule>
+
+KeepAlive On
+#ErrorLogFormat "[%t] [%{X-Forwarded-For}i] [%l] [pid %P] %F: %E: [client %a] %M"
+Protocols h2 h2c http/1.1
+
+<IfModule mod_headers.c>
+	ServerSignature Off
+	ServerTokens Prod
+</IfModule>
+
+<VirtualHost ${SERVER_IP_ADDR}:80>
+	ServerName ${MAGE_DOMAIN_PIM}
+	ServerAlias ${MAGE_DOMAIN_PIM}
+	DocumentRoot /home/${MAGE_WEB_USER_PIM}/public_html
+	ErrorLog /home/${MAGE_WEB_USER_PIM}/logs/error_log
+	CustomLog /home/${MAGE_WEB_USER_PIM}/logs/access_log combined
+
+	ProxyFCGIBackendType FPM
+	<Location />
+	DirectoryIndex index.php index.html
+</Location>
+	#SetOutputFilter DEFLATE
+    AddHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/" php
+	#AddHandler "proxy:fcgi://127.0.0.1:9000" php
+<FilesMatch "\.php$">
+    SetHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/"
+    #SetHandler "proxy:fcgi://127.0.0.1:9000"
+</FilesMatch>
+<Directory /home/${MAGE_WEB_USER_PIM}/public_html>
+  Options IncludesNOEXEC FollowSymLinks
+  Require all granted
+  AllowOverride All
+</Directory>
+
+</Virtualhost>
+
+<VirtualHost ${SERVER_IP_ADDR}:80>
+	ServerName ${MAGE_DOMAIN_WP}
+	ServerAlias ${MAGE_DOMAIN_WP}
+	DocumentRoot /home/${MAGE_WEB_USER_WP}/public_html
+	ErrorLog /home/${MAGE_WEB_USER_WP}/logs/error_log
+	CustomLog /home/${MAGE_WEB_USER_WP}/logs/access_log combined
+
+	ProxyFCGIBackendType FPM
+	<Location />
+	DirectoryIndex index.php index.html
+</Location>
+	#SetOutputFilter DEFLATE
+    AddHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/" php
+	#AddHandler "proxy:fcgi://127.0.0.1:9000" php
+<FilesMatch "\.php$">
+    SetHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/"
+    #SetHandler "proxy:fcgi://127.0.0.1:9000"
+</FilesMatch>
+<Directory /home/${MAGE_WEB_USER_WP}/public_html>
+  Options IncludesNOEXEC FollowSymLinks
+  Require all granted
+  AllowOverride All
+</Directory>
+
+</Virtualhost>
+END
+
+# vim /etc/httpd/conf/httpd.conf     <------modify it after downloading all the zipped file from old container
+|--> DocumentRoot /home/cnpim/public_html/pim-community-standard/web
+
+sed -i "s/LoadModule dav_module modules\/mod_dav.so/#LoadModule dav_module modules\/mod_dav.so/" /etc/httpd/conf.modules.d/00-dav.conf
+sed -i "s/LoadModule dav_fs_module modules\/mod_dav_fs.so/#LoadModule dav_fs_module modules\/mod_dav_fs.so/" /etc/httpd/conf.modules.d/00-dav.conf
+sed -i "s/LoadModule dav_lock_module modules\/mod_dav_lock.so/#LoadModule dav_lock_module modules\/mod_dav_lock.so/" /etc/httpd/conf.modules.d/00-dav.conf
+
+sed -i "s/LoadModule actions_module modules\/mod_actions.so/#LoadModule actions_module modules\/mod_actions.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule allowmethods_module modules\/mod_allowmethods.so/#LoadModule allowmethods_module modules\/mod_allowmethods.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule auth_digest_module modules\/mod_auth_digest.so/#LoadModule auth_digest_module modules\/mod_auth_digest.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule authn_anon_module modules\/mod_authn_anon.so/#LoadModule authn_anon_module modules\/mod_authn_anon.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule authn_dbd_module modules\/mod_authn_dbd.so/#LoadModule authn_dbd_module modules\/mod_authn_dbd.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule authn_dbm_module modules\/mod_authn_dbm.so/#LoadModule authn_dbm_module modules\/mod_authn_dbm.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule authn_socache_module modules\/mod_authn_socache.so/#LoadModule authn_socache_module modules\/mod_authn_socache.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule authz_dbd_module modules\/mod_authz_dbd.so/#LoadModule authz_dbd_module modules\/mod_authz_dbd.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule authz_dbm_module modules\/mod_authz_dbm.so/#LoadModule authz_dbm_module modules\/mod_authz_dbm.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule authz_owner_module modules\/mod_authz_owner.so/#LoadModule authz_owner_module modules\/mod_authz_owner.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule cache_module modules\/mod_cache.so/#LoadModule cache_module modules\/mod_cache.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule cache_disk_module modules\/mod_cache_disk.so/#LoadModule cache_disk_module modules\/mod_cache_disk.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule cache_socache_module modules\/mod_cache_socache.so/#LoadModule cache_socache_module modules\/mod_cache_socache.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule dbd_module modules\/mod_dbd.so/#LoadModule dbd_module modules\/mod_dbd.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule dumpio_module modules\/mod_dumpio.so/#LoadModule dumpio_module modules\/mod_dumpio.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule ext_filter_module modules\/mod_ext_filter.so/#LoadModule ext_filter_module modules\/mod_ext_filter.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule include_module modules\/mod_include.so/#LoadModule include_module modules\/mod_include.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule info_module modules\/mod_info.so/#LoadModule info_module modules\/mod_info.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule logio_module modules\/mod_logio.so/#LoadModule logio_module modules\/mod_logio.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule macro_module modules\/mod_macro.so/#LoadModule macro_module modules\/mod_macro.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule negotiation_module modules\/mod_negotiation.so/#LoadModule negotiation_module modules\/mod_negotiation.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule request_module modules\/mod_request.so/#LoadModule request_module modules\/mod_request.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule socache_dbm_module modules\/mod_socache_dbm.so/#LoadModule socache_dbm_module modules\/mod_socache_dbm.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule socache_memcache_module modules\/mod_socache_memcache.so/#LoadModule socache_memcache_module modules\/mod_socache_memcache.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule substitute_module modules\/mod_substitute.so/#LoadModule substitute_module modules\/mod_substitute.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule unique_id_module modules\/mod_unique_id.so/#LoadModule unique_id_module modules\/mod_unique_id.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule userdir_module modules\/mod_userdir.so/#LoadModule userdir_module modules\/mod_userdir.so/" /etc/httpd/conf.modules.d/00-base.conf
+sed -i "s/LoadModule vhost_alias_module modules\/mod_vhost_alias.so/#LoadModule vhost_alias_module modules\/mod_vhost_alias.so/" /etc/httpd/conf.modules.d/00-base.conf
+
+
+sed -i "s/LoadModule lbmethod_byrequests_module modules\/mod_lbmethod_byrequests.so/#LoadModule lbmethod_byrequests_module modules\/mod_lbmethod_byrequests.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+sed -i "s/LoadModule lbmethod_bytraffic_module modules\/mod_lbmethod_bytraffic.so/#LoadModule lbmethod_bytraffic_module modules\/mod_lbmethod_bytraffic.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+sed -i "s/LoadModule lbmethod_heartbeat_module modules\/mod_lbmethod_heartbeat.so/#LoadModule lbmethod_heartbeat_module modules\/mod_lbmethod_heartbeat.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+sed -i "s/LoadModule proxy_ajp_module modules\/mod_proxy_ajp.so/#LoadModule proxy_ajp_module modules\/mod_proxy_ajp.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+sed -i "s/LoadModule proxy_express_module modules\/mod_proxy_express.so/#LoadModule proxy_express_module modules\/mod_proxy_express.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+sed -i "s/LoadModule proxy_fdpass_module modules\/mod_proxy_fdpass.so/#LoadModule proxy_fdpass_module modules\/mod_proxy_fdpass.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+sed -i "s/LoadModule proxy_ftp_module modules\/mod_proxy_ftp.so/#LoadModule proxy_ftp_module modules\/mod_proxy_ftp.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+sed -i "s/LoadModule proxy_hcheck_module modules\/mod_proxy_hcheck.so/#LoadModule proxy_hcheck_module modules\/mod_proxy_hcheck.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+sed -i "s/LoadModule proxy_scgi_module modules\/mod_proxy_scgi.so/#LoadModule proxy_scgi_module modules\/mod_proxy_scgi.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+sed -i "s/LoadModule proxy_uwsgi_module modules\/mod_proxy_uwsgi.so/#LoadModule proxy_uwsgi_module modules\/mod_proxy_uwsgi.so/" /etc/httpd/conf.modules.d/00-proxy.conf
+
+sed -i "s/LoadModule cgi_module modules\/mod_cgi.so/#LoadModule cgi_module modules\/mod_cgi.so/" /etc/httpd/conf.modules.d/01-cgi.conf
+
+sed -i "s/AddLanguage es-ES .es-ES/#AddLanguage es-ES .es-ES/" /etc/httpd/conf.d/welcome.conf
+sed -i "s/AddLanguage zh-CN .zh-CN/#AddLanguage zh-CN .zh-CN/" /etc/httpd/conf.d/welcome.conf
+sed -i "s/AddLanguage zh-HK .zh-HK/#AddLanguage zh-HK .zh-HK/" /etc/httpd/conf.d/welcome.conf
+sed -i "s/AddLanguage zh-TW .zh-TW/#AddLanguage zh-TW .zh-TW/" /etc/httpd/conf.d/welcome.conf
+sed -i "s/LanguagePriority en/#LanguagePriority en/" /etc/httpd/conf.d/welcome.conf
+sed -i "s/ForceLanguagePriority Fallback/#ForceLanguagePriority Fallback/" /etc/httpd/conf.d/welcome.conf
+
+httpd -t
+
+## SSL
+-------
+mkdir -p /etc/httpd/conf.d/ssl/
+
+mv /var/lib/mysql/ca.pem /var/lib/mysql/ca.pem.back
+mv /var/lib/mysql/ca-key.pem /var/lib/mysql/ca-key.pem.back
+
+wget --no-check-certificate -O /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}.zip ${OLD_SITE}/polylok_ssl.zip
+unzip /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}.zip -d /etc/httpd/conf.d/ssl >/dev/null 2>&1
+mv /etc/httpd/conf.d/ssl/ssl /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}
+cp /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}/ssl.cert /var/lib/mysql/ca.pem && cp /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}/ssl.pk /var/lib/mysql/ca-key.pem
+service mysqld restart >/dev/null 2>&1
+
+### Some mysql ssl check
+mysql> show variables like 'have_ssl';
+mysql> status;
+
+
+
+cat >> /etc/httpd/conf.d/ssl.conf <<END
+# custom config added
+<VirtualHost 172.31.3.53:443>
+	SSLEngine on
+	SSLHonorCipherOrder on
+	SSLProxyVerify none
+	SSLProxyEngine On
+	SSLProxyCheckPeerCN off
+	SSLProxyCheckPeerName off
+	SSLProxyCheckPeerExpire off
+	SSLProtocol all -SSLv2 -SSLv3 -TLSv1
+	SSLCipherSuite "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA 3DES !RC4 !aNULL!eNULL !LOW !MD5 !EXP !PSK !SRP !DSS !3DES !DES"
+
+	Protocols h2 h2c http/1.1
+	#Protocols h2 http/1.1
+	#Protocols h2
+	#Protocols http/1.1
+	H2TLSWarmUpSize     0
+	H2TLSCoolDownSecs   0
+
+
+	#   Server Certificate:
+	SSLCertificateFile /etc/httpd/conf.d/ssl/pimdev/ssl.cert
+	#   Server Private Key:
+	SSLCertificateKeyFile /etc/httpd/conf.d/ssl/pimdev/ssl.pk
+	#   Server Certificate Chain:
+	SSLCACertificatePath /etc/httpd/conf.d/ssl/pimdev/
+	SSLCertificateChainFile /etc/httpd/conf.d/ssl/pimdev/bundle.crt
+
+	ServerName pimdev.harriswebworks.com
+	ServerAlias pimdev.harriswebworks.com
+	ServerPath /home/pimdev/public_html
+	DocumentRoot /home/pimdev/public_html/pim-community-standard/web
+
+	AccessFileName .htaccess
+
+	<Directory "/home/pimdev/public_html">
+		Options IncludesNOEXEC FollowSymLinks Indexes
+		AllowOverride All
+		Require all granted
+
+      <IfModule sapi_apache2.c>
+              php_admin_flag engine on
+      </IfModule>
+
+	</Directory>
+
+	CustomLog /home/pimdev/logs/access_log "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"
+	ErrorLog /home/pimdev/logs/error_log
+
+	ProxyFCGIBackendType FPM
+	<Location />
+		DirectoryIndex index.php index.html
+	</Location>
+	#SetOutputFilter DEFLATE
+
+    AddHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/" php
+	#AddHandler "proxy:fcgi://127.0.0.1:9000" php
+	<FilesMatch "\.php$">
+		SetHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/"
+        #SetHandler "proxy:fcgi://127.0.0.1:9000"
+	</FilesMatch>
+	<IfModule mod_rewrite.c>
+		RewriteEngine on
+		RewriteCond %{REQUEST_METHOD} ^TRACE
+		RewriteRule .* - [F]
+	</IfModule>
+
+</VirtualHost>
+END
+
+httpd -t
+
+#hostname+timezone
+#-----------------
+hostnamectl set-hostname ${MAGE_DOMAIN} --static
+timedatectl set-timezone ${MAGE_TIMEZONE}
+timedatectl
+rm -rf /etc/localtime
+ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
+ll /etc/localtime
+touch /etc/default/locale
+
+cat /etc/default/locale <<EOF
+LANG="en_US.utf8"
+LANGUAGE="en_US:"
+EOF
+
+env LC_ALL=en_US.UTF-8
+export LC_ALL
+localectl set-locale LANG=en_US.utf8
+
+#PHP_FPM <-- you might check it manually
+#------------------------------------------
+mkdir -p /var/php-fpm/ && chown -R ${MAGE_WEB_USER_PIM}:${MAGE_WEB_USER_PIM} /var/php-fpm
+sed -i "s/\[www\]/\[${MAGE_WEB_USER_PIM}\]/" /etc/php-fpm.d/www.conf
+sed -i "s/user = apache/user = ${MAGE_WEB_USER_PIM}/" /etc/php-fpm.d/www.conf
+sed -i "s/group = apache/group = ${MAGE_WEB_USER_PIM}/" /etc/php-fpm.d/www.conf
+sed -i "s/;listen.owner = nobody/listen.owner = ${MAGE_WEB_USER_PIM}/" /etc/php-fpm.d/www.conf
+sed -i "s/;listen.group = nobody/listen.group = ${MAGE_WEB_USER_PIM}/" /etc/php-fpm.d/www.conf
+sed -i "s/;listen.mode = 0660/listen.mode = 0666/" /etc/php-fpm.d/www.conf
+
+sed -i '/PHPSESSID/d' /etc/php.ini
+sed -i "s,.*date.timezone.*,date.timezone = ${MAGE_TIMEZONE}," /etc/php.ini
+sed -i "s/session.save_handler = files/session.save_handler = redis/" /etc/php.ini
+sed -i "s/session.serialize_handler = php/session.serialize_handler = igbinary/" /etc/php.ini
+
+sed -i "s/listen = \/run\/php-fpm\/www.sock/listen = \/var\/php-fpm\/www.sock/" /etc/php-fpm.d/www.conf
+sed -i "s/listen.acl_users = apache,nginx/listen.acl_users = apache,nginx,${MAGE_WEB_USER_PIM}/" /etc/php-fpm.d/www.conf
+sed -i '/sendmail_path/,$d' /etc/php-fpm.d/www.conf
+
+cat >> /etc/php-fpm.d/www.conf <<END
+;;
+;; Custom pool settings
+php_value[soap.wsdl_cache_dir] = /var/lib/php/wsdlcache
+php_flag[display_errors] = off
+php_admin_flag[log_errors] = on
+php_admin_value[error_log] = /home/${MAGE_WEB_USER_PIM}/logs/php-fpm-error.log
+php_admin_value[memory_limit] = 1024M
+php_admin_value[date.timezone] = ${MAGE_TIMEZONE}
+END
+
+systemctl daemon-reload
+systemctl restart httpd.service
+
+#PHPMYADMIN
+-------------
+PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
+PMA_PASSWD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
+BLOWFISHCODE=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9=+_[]{}()<>-' | fold -w 64 | head -n 1)
+dnf -y install phpMyAdmin
+mv /etc/phpMyAdmin/config.inc.php /etc/phpMyAdmin/config.inc.php.back
+wget -O /etc/phpMyAdmin/config.inc.php ${REPO_HWW}/config.inc
+wget -O /usr/share/phpMyAdmin/.htaccess ${REPO_HWW}/mydb/htaccess
+USER_IP=${SSH_CLIENT%% *}
+sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" /etc/phpMyAdmin/config.inc.php
+sed -i "s/Require local/\<IfModule mod_authz_core.c\>\nRequire all granted\n\<\/IfModule\>\n\<IfModule \!mod_authz_core.c\>\nOrder Deny,Allow\nDeny from All\n Allow from ${SERVER_IP_ADDR}\nAllow from 127.0.0.1\nAllow from ::1\n\<\/IfModule\>/" /etc/httpd/conf.d/phpMyAdmin.conf
+
+cat >> /root/mage/.mage_index <<END
+pma   mysql_${PMA_FOLDER}   mysql   ${PMA_PASSWD}
+END
+
+
+#DNF_AUTOMATION
+----------------
+sed -i 's/apply_updates = no/apply_updates = yes/' /etc/dnf/automatic.conf
+sed -i 's/emit_via = stdio/emit_via = email/' /etc/dnf/automatic.conf
+sed -i "s/email_from =.*/email_from = dnf-automatic@${MAGE_DOMAIN_PIM}/" /etc/dnf/automatic.conf
+sed -i "s/email_to = root/email_to = ${MAGE_ADMIN_EMAIL}/" /etc/dnf/automatic.conf
+systemctl enable --now dnf-automatic.timer
+
+#PRO_FTPD
+----------
+SERVER_IP_ADDR=$(ip route get 1 | awk '{print $NF;exit}')
+USER_IP=${SSH_CLIENT%% *}
+USER_GEOIP=$(geoiplookup ${USER_IP} | awk 'NR==1{print substr($4,1,2)}')
+FTP_PORT=$(shuf -i 5121-5132 -n 1)
+sed -i "s/server_sftp_port/${FTP_PORT}/" /etc/proftpd.conf
+sed -i "s/server_ip_address/${SERVER_IP_ADDR}/" /etc/proftpd.conf
+sed -i "s/sftp_domain/${MAGE_DOMAIN_PIM}/" /etc/proftpd.conf
+cp /usr/lib/systemd/system/proftpd.service /etc/systemd/system/proftpd.service
+sed -i "/^After.*/a OnFailure=service-status-mail@%n.service" /etc/systemd/system/proftpd.service
+sed -i "/\[Install\]/i Restart=on-failure\nRestartSec=10\n" /etc/systemd/system/proftpd.service
+systemctl daemon-reload
+systemctl enable proftpd.service
+systemctl restart proftpd.service
+cat >> /root/mage/.mage_index <<END
+proftpd   ${USER_GEOIP}   ${FTP_PORT}   ${MAGE_WEB_USER_PASS_PIM}
+END
+
+#MYSQLROUTE
+------------
+ROUTER_PORT=$(shuf -i 10501-10539 -n 1)
+mkdir /etc/mysqlrouter
+touch /etc/mysqlrouter/mysqlrouter.conf
+cat >> /etc/mysqlrouter/mysqlrouter.conf <<END
+
+## REMOTE PORT ROUTING
+[routing:${MAGE_WEB_USER_PIM}_mysql]
+bind_address = ${SERVER_IP_ADDR}:${ROUTER_PORT}
+destinations = 127.0.0.1:3306
+mode = read-only
+END
+
+
+#PHP-OPCACHE
+-------------
+curl -s -o /usr/local/bin/phpcachetool http://gordalina.github.io/cachetool/downloads/cachetool.phar
+chmod +x /usr/local/bin/phpcachetool
+
+#Some_Scripts
+------------------
+mkdir -p /opt/magento_saved_scripts
+wget -O /opt/magento_saved_scripts/tlstest_$(openssl rand -hex 2).php ${REPO_HWW}/scripts/tlstest.php
+wget -O /usr/local/bin/wesley.pl ${REPO_HWW}/scripts/wesley.pl
+wget -O /usr/local/bin/mysqltuner ${MYSQL_TUNER}
+
+#cert-bot
+----------
+wget -O /usr/local/bin/certbot-auto https://dl.eff.org/certbot-auto
+chmod +x /usr/local/bin/certbot-auto
+/usr/local/bin/certbot-auto certonly --manual
+
+#Log-rotation
+--------------
+cat > /etc/logrotate.d/pim <<END
+${MAGE_WEB_ROOT_PATH_PIM}/var/log/*.log
+{
+su root root
+create 660 ${MAGE_WEB_USER_PIM} ${MAGE_WEB_USER_PIM}
+weekly
+rotate 2
+notifempty
+missingok
+compress
+}
+END
+
+cat > /etc/logrotate.d/wp <<END
+${MAGE_WEB_ROOT_PATH_WP}/var/log/*.log
+{
+su root root
+create 660 ${MAGE_WEB_USER_WP} ${MAGE_WEB_USER_WP}
+weekly
+rotate 2
+notifempty
+missingok
+compress
+}
+END
+
+cat > /etc/logrotate.d/httpd <<END
+/home/${MAGE_WEB_USER_PIM}/logs/*log {
+    su root root
+    missingok
+    rotate 4
+    compressler = redis/" /etc/php.ini
+sed -i "s/session.serialize_handler = php/session.serialize_hand
+    notifempty
+    sharedscripts
+    delaycompress
+    postrotate
+        /bin/systemctl reload httpd.service > /dev/null 2>/dev/null || true
+    endscript
+}
+END
+
+cat > /etc/logrotate.d/httpd_wp <<END
+/home/${MAGE_WEB_USER_WP}/logs/*log {
+    su root root
+    missingok
+    rotate 4
+    compressler = redis/" /etc/php.ini
+sed -i "s/session.serialize_handler = php/session.serialize_hand
+    notifempty
+    sharedscripts
+    delaycompress
+    postrotate
+        /bin/systemctl reload httpd.service > /dev/null 2>/dev/null || true
+    endscript
+}
+END
+
+#SERVICE STATUS WITH E-MAIL ALERTING
+------------------------------------
+wget -O /etc/systemd/system/service-status-mail@.service ${REPO_HWW}/scripts/service-status-mail@.service
+wget -O /usr/local/bin/service-status-mail.sh ${REPO_HWW}/scripts/service-status-mail.sh
+sed -i "s/MAGEADMINEMAIL/${MAGE_ADMIN_EMAIL}/" /usr/local/bin/service-status-mail.sh
+sed -i "s/DOMAINNAME/${MAGE_DOMAIN_PIM}/" /usr/local/bin/service-status-mail.sh
+chmod u+x /usr/local/bin/service-status-mail.sh
+systemctl daemon-reload
+
+#MALWARE SCAN
+--------------
+dnf -y install audit
+pip3 -q install --no-cache-dir --upgrade mwscan     #this might take a little time
+cat > /etc/cron.hourly/mwscan <<END
+## MAGENTO MALWARE SCANNER
+mwscan --newonly --quiet ${MAGE_WEB_ROOT_PATH_PIM} | ts | tee -a /var/log/mwscan.log | ifne mailx -s "Malware found at $(hostname)" ${MAGE_ADMIN_EMAIL}
+END
+chmod +x /etc/cron.hourly/mwscan
+
+# AUDIT MAGENTO FILES AND FOLDERS
+---------------------------------
+cat >> /etc/audit/rules.d/audit.rules <<END
+
+## audit magento files
+-a never,exit -F dir=${MAGE_WEB_ROOT_PATH_PIM}/var/ -k exclude
+-w ${MAGE_WEB_ROOT_PATH_PIM} -p wa -k auditmg
+END
+
+service auditd reload
+service auditd restart
+auditctl -l
+
+
+#GEO ACCESS
+-------------------
+cd /usr/local/src
+git clone https://github.com/allinurl/goaccess.git
+cd goaccess
+autoreconf -fi
+./configure --enable-utf8 --enable-geoip=legacy --with-openssl
+make > goaccess-make-log-file
+make install > goaccess-make-log-file
+sed -i '13s/#//' /usr/local/etc/goaccess/goaccess.conf
+sed -i '36s/#//' /usr/local/etc/goaccess/goaccess.conf
+sed -i '70s/#//' /usr/local/etc/goaccess/goaccess.conf
+sed -i "s,#ssl-cert.*,ssl-cert /etc/letsencrypt/live/${MAGE_DOMAIN_PIM}/fullchain.pem," /usr/local/etc/goaccess/goaccess.conf
+sed -i "s,#ssl-key.*,ssl-key /etc/letsencrypt/live/${MAGE_DOMAIN_PIM}/privkey.pem," /usr/local/etc/goaccess/goaccess.conf
+
+
+#rootcron
+---------
+echo "30 23 * * * /usr/local/bin/goaccess /home/${MAGE_WEB_USER_PIM}/logs/access_log -a -o /home/${MAGE_WEB_USER_PIM}/logs/access_log_report.html 2>&1 && echo | mailx -s \"Daily access log report at ${HOSTNAME}\" -a /home/${MAGE_WEB_USER_PIM}/logs/access_log_report.html ${MAGE_ADMIN_EMAIL}" >> rootcron
+echo "5 8 * * 7 perl /usr/local/bin/mysqltuner --nocolor 2>&1 | mailx -E -s \"MYSQLTUNER WEEKLY REPORT at ${HOSTNAME}\" ${MAGE_ADMIN_EMAIL}" >> rootcron
+
+crontab rootcron
+rm rootcron
+
+
+systemctl daemon-reload
+systemctl restart httpd.service
+systemctl restart php-fpm.service
+
+#Sendmail
+--------------
+wget -O /etc/mail/sendmail.zip ${REPO_HWW}/scripts/sendmail.zip
+unzip /etc/mail/sendmail.zip -d /etc/mail
+mv /etc/mail/sendmail/* /etc/mail/
+rm -rf /etc/mail/sendmail.zip
+
+cat > /etc/mail/virtusertable <<END
+root@${MAGE_DOMAIN_PIM}  ${MAGE_WEB_USER_PIM}
+END
+
+sudo makemap hash /etc/mail/authinfo.db < /etc/mail/authinfo
+sudo makemap hash /etc/mail/access.db < /etc/mail/access
+sudo chmod 666 /etc/mail/sendmail.cf      # will take some time
+sudo m4 /etc/mail/sendmail.mc > /etc/mail/sendmail.cf
+sudo chmod 644 /etc/mail/sendmail.cf
+sudo makemap hash /etc/mail/virtusertable < /etc/mail/virtusertable
+
+systemctl daemon-reload
+systemctl restart sendmail.service
+
+
+#GUI-OPCACHE, CM_REDIS_TOOLS
+-----------------------------
+cd ${MAGE_WEB_ROOT_PATH}
+wget ${REPO_HWW}/opcache.zip
+#wget ${REPO_HWW}/cm_redis_tools.zip
+#unzip cm_redis_tools.zip
+unzip opcache.zip
+rm -rf cm_redis_tools.zip  opcache.zip
+#&& unzip mydb.zip mydb.zip
+chown -R ${MAGE_WEB_USER}:${MAGE_WEB_USER} ${MAGE_WEB_ROOT_PATH%/*}
+
+
+#Fixing permissions
+-------------------
+chown -R ${MAGE_WEB_USER_WP}:${MAGE_WEB_USER_WP} ${MAGE_WEB_ROOT_PATH_WP}
+cd ${MAGE_WEB_ROOT_PATH_WP}
+find . -type f -exec chmod 666 {} \;
+find . -type d -exec chmod 2777 {} \;
+setfacl -Rdm u:${MAGE_WEB_USER_WP}:rwx,g:${MAGE_WEB_USER_WP}:r-x,o::- ${MAGE_WEB_ROOT_PATH_WP%/*}
+setfacl -Rm u:${MAGE_WEB_USER_WP}:rwx ${MAGE_WEB_ROOT_PATH_WP%/*}
+
+chown -R ${MAGE_WEB_USER_PIM}:${MAGE_WEB_USER_PIM} ${MAGE_WEB_ROOT_PATH_PIM}
+cd ${MAGE_WEB_ROOT_PATH_PIM}
+find . -type f -exec chmod 666 {} \;
+find . -type d -exec chmod 2777 {} \;
+setfacl -Rdm u:${MAGE_WEB_USER_PIM}:rwx,g:${MAGE_WEB_USER_PIM}:r-x,o::- ${MAGE_WEB_ROOT_PATH_PIM%/*}
+setfacl -Rm u:${MAGE_WEB_USER_PIM}:rwx ${MAGE_WEB_ROOT_PATH_PIM%/*}
+
+chmod +x /usr/local/bin/*
+usermod -G apache ${MAGE_WEB_USER_WP}
+usermod -G apache ${MAGE_WEB_USER_PIM}
+
+#Saving Bash Profile
+-----------------------
+cd /home/${MAGE_WEB_USER_PIM}
+wget ${REPO_HWW}/bash_profile.zip
+unzip bash_profile.zip
+sed -i "s/MAGEWEBUESR/${MAGE_WEB_USER_PIM}/" .bash_profile
+rm -rf bash_profile.zip
+source .bash_profile
+
+cd /home/${MAGE_WEB_USER_WP}
+wget ${REPO_HWW}/bash_profile.zip
+unzip bash_profile.zip
+sed -i "s/MAGEWEBUESR/${MAGE_WEB_USER_WP}/" .bash_profile
+rm -rf bash_profile.zip
+source .bash_profile
+
+
+
+#nodejs
+----------
+curl --location https://rpm.nodesource.com/setup_10.x
+curl -sL https://dl.yarnpkg.com/rpm/yarn.repo |  tee /etc/yum.repos.d/yarn.repo
+yum repolist
+yum -y install nodejs yarn
+npm install -g grunt-cli
+
+yum  install php-pear php-devel  -y
+pecl channel-update pecl.php.net
+pecl install Imagickpimdev
+
+echo -e "===========================  INSTALLATION LOG ======================================
+
+[sites available]: Drupal, Wordpress
+[db avaiable]: Drupal, Wordpress, Magento
+
+[shop domain]: ${MAGE_DOMAIN}
+[shop webroot path]: ${MAGE_WEB_ROOT_PATH}
+[shop admin path]: ${MAGE_DOMAIN}/${MAGE_ADMIN_PATH_DRU}
+[shop admin name]: ${MAGE_ADMIN_LOGIN_DRU}
+[shop admin pass]: ${MAGE_ADMIN_PASS_DRU}
+
+[blog webroot path]: ${MAGE_WEB_ROOT_PATH}/blog
+[blog admin path]: ${MAGE_DOMAIN}/${MAGE_ADMIN_PATH_WP}
+[blog admin name]: ${MAGE_ADMIN_LOGIN_WP}
+[blog admin pass]: ${MAGE_ADMIN_PASS_WP}
+
+[phpmyadmin url]: ${MAGE_DOMAIN}/mysql_${PMA_FOLDER}
+[phpmyadmin http auth name]: mysql
+[phpmyadmin http auth pass]: ${PMA_PASSWD}
+
+[shop mysql host]: ${MAGE_DB_HOST}
+[shop mysql root pass]: ${MYSQL_ROOT_PASS}
+
+[shop mysql user]: ${MAGE_DB_USER_NAME_DRU}
+[shop mysql pass]: ${MAGE_DB_PASS_DRU}
+[shop mysql database]: ${MAGE_DB_NAME_DRU}
+
+[blog mysql host]: ${MAGE_DB_HOST}
+[blog mysql user]: ${MAGE_DB_USER_NAME_WP}
+[blog mysql pass]: ${MAGE_DB_PASS_WP}
+[blog mysql database]: ${MAGE_DB_NAME_WP}
+
+[m2 mydql database]: ${MAGE_DB_NAME_M2}
+
+[ftp port]: ${FTP_PORT}
+[ftp user]: ${MAGE_WEB_USER}
+[ftp password]: ${MAGE_WEB_USER_PASS}
+
+[percona toolkit]: https://www.percona.com/doc/percona-toolkit/LATEST/index.html
+[database monitor]: /usr/local/bin/mytop
+[mysql tuner]: /usr/local/bin/mysqltuner
+
+[service alert]: /usr/local/bin/service-status-mail.sh
+
+[redis on port 6379]: systemctl restart redis
+
+
+[crontab]: in case of migration magento 2 cron disabled. enable it if no migration.
+[installed db dump]: /root/polylok_polylok_sql.zip
+					 /root/polylok_blog_sql.zip
+					 /root/drainagedirect_site_sql.zip
+===========================  INSTALLATION LOG  ======================================" | tee /root/mage/.install.log
+
+http://m2testbox.harriswebworks.com
+
+
+
+
+
+
+#after moving the zipped data to new container
+------------------------------------------------
+#For WP - only
+curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar && php wp-cli.phar --info && chmod +x wp-cli.phar && sudo mv wp-cli.phar /usr/local/bin/wp && wp --info
+service httpd restart && service redis restart
+wp plugin install redis-cache --activate
+wp plugin activate redis-cache
+wp redis status
+wp redis enable
+wp plugin update --all
+randstring=$(< /dev/urandom tr -dc A-Za-z0-9 | head -c${1:-32};echo;);
+cat >> /home/polylok/public_html/blog/wp-config.php <<EOF
+define('WP_CACHE_KEY_SALT','${randstring}');
+define('WP_CACHE',true);
+EOF
+
+#For WP optimise
+wp redis update-dropin
+wp transient delete --all

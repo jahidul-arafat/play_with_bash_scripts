@@ -1,0 +1,295 @@
+1  MAGE_OWNER=accufmdev
+    2  echo "alias dir='ls -al'
+    3  export PS1='root@${MAGE_OWNER}] \$PWD> '
+    4  alias quota='quota -s'
+    5  HISTFILE=~/.bash_history
+    6  " >> /root/.bash_profile
+    7  source /root/.bash_profile
+    8  dnf install http://rpms.famillecollet.com/enterprise/remi-release-8.rpm
+    9  dnf module enable php:remi-7.4
+   10   dnf config-manager --set-enabled remi
+   11  dnf install php
+   12  php -m
+   13  cp /usr/lib/systemd/system/php-fpm.service /etc/systemd/system/php-fpm.service
+   14  sed -i "s/PrivateTmp=true/PrivateTmp=false/" /etc/systemd/system/php-fpm.service
+   15  sed -i "/^After.*/a OnFailure=service-status-mail@%n.service" /etc/systemd/system/php-fpm.service
+   16  sed -i "/\[Install\]/i Restart=on-failure\nRestartSec=5\n" /etc/systemd/system/php-fpm.service
+   17  sed -i "/^OnFailure.*/a StartLimitBurst=5" /etc/systemd/system/php-fpm.service
+   18  sed -i "/^StartLimitBurst.*/a StartLimitIntervalSec=33" /etc/systemd/system/php-fpm.service
+   19  systemctl daemon-reload
+   20  systemctl enable php-fpm
+   21  systemctl disable httpd
+   22  rpm -qa 'php*' | awk '{print "  Installed: ",$1}'
+   23  cat > /etc/php.d/10-opcache.ini <<END
+   24  zend_extension=opcache.so
+   25  opcache.enable = 1
+   26  opcache.enable_cli = 1
+   27  opcache.memory_consumption = 512
+   28  opcache.interned_strings_buffer = 4
+   29  opcache.max_accelerated_files = 100000
+   30  opcache.max_wasted_percentage = 5
+   31  opcache.use_cwd = 1
+   32  opcache.validate_timestamps = 0
+   33  ;opcache.revalidate_freq = 2
+   34  ;opcache.validate_permission= 1
+   35  ;opcache.validate_root= 1
+   36  opcache.file_update_protection = 2
+   37  opcache.revalidate_path = 0
+   38  opcache.save_comments = 1
+   39  opcache.load_comments = 1
+   40  opcache.fast_shutdown = 1
+   41  opcache.enable_file_override = 0
+   42  opcache.optimization_level = 0xffffffff
+   43  opcache.inherited_hack = 1
+   44  opcache.blacklist_filename=/etc/php.d/opcache-default.blacklist
+   45  opcache.max_file_size = 0
+   46  opcache.consistency_checks = 0
+   47  opcache.force_restart_timeout = 60
+   48  opcache.error_log = "/var/log/php-fpm/opcache.log"
+   49  opcache.log_verbosity_level = 1
+   50  opcache.preferred_memory_model = ""
+   51  opcache.protect_memory = 0
+   52  ;opcache.mmap_base = ""
+   53  END
+   54  cp /etc/php.ini /etc/php.ini.BACK
+   55  sed -i 's/^\(max_execution_time = \)[0-9]*/\17200/' /etc/php.ini
+   56  sed -i 's/^\(max_input_time = \)[0-9]*/\17200/' /etc/php.ini
+   57  sed -i 's/^\(memory_limit = \)[0-9]*M/\1512M/' /etc/php.ini
+   58  sed -i 's/^\(post_max_size = \)[0-9]*M/\164M/' /etc/php.ini
+   59  sed -i 's/^\(upload_max_filesize = \)[0-9]*M/\164M/' /etc/php.ini
+   60  sed -i 's/expose_php = On/expose_php = Off/' /etc/php.ini
+   61  sed -i 's/;realpath_cache_size = 16k/realpath_cache_size = 512k/' /etc/php.ini
+   62  sed -i 's/;realpath_cache_ttl = 120/realpath_cache_ttl = 86400/' /etc/php.ini
+   63  sed -i 's/short_open_tag = Off/short_open_tag = On/' /etc/php.ini
+   64  sed -i 's/; max_input_vars = 1000/max_input_vars = 50000/' /etc/php.ini
+   65  sed -i 's/session.gc_maxlifetime = 1440/session.gc_maxlifetime = 28800/' /etc/php.ini
+   66  sed -i 's/mysql.allow_persistent = On/mysql.allow_persistent = Off/' /etc/php.ini
+   67  sed -i 's/mysqli.allow_persistent = On/mysqli.allow_persistent = Off/' /etc/php.ini
+   68  sed -i 's/pm = dynamic/pm = ondemand/' /etc/php-fpm.d/www.conf
+   69  sed -i 's/;pm.max_requests = 500/pm.max_requests = 10000/' /etc/php-fpm.d/www.conf
+   70  sed -i 's/pm.max_children = 50/pm.max_children = 1000/' /etc/php-fpm.d/www.conf
+   71  echo "*         soft    nofile          700000" >> /etc/security/limits.conf
+   72  echo "*         hard    nofile          1000000" >> /etc/security/limits.conf
+   73  hostnamectl set-hostname server.docs.harriswebworks.com --static
+   74  timedatectl set-timezone America/New_York
+   75  sh install_nginx.sh
+   76  rm -f /etc/localtime
+   77  ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
+   78  touch /etc/default/locale
+   79  cat >> /etc/default/locale <<EOF
+   80  LANG="en_US.utf8"
+   81  LANGUAGE="en_US:"
+   82  EOF
+   83  env LC_ALL=en_US.UTF-8
+   84  export LC_ALL
+   85  localectl set-locale LANG=en_US.utf8
+   86  mkdir -p /etc/nginx/sites-enabled
+   87  mkdir -p /etc/nginx/sites-available && cd $_
+   88  sed -i 's/.*server unix:\/run\/php-fpm\/www.sock;/        server unix:\/var\/php-fpm\/www.sock;/' /etc/nginx/conf.d/php-fpm.conf
+   89  PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
+   90  PMA_PASSWD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
+   91  BLOWFISHCODE=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9=+_[]{}()<>-' | fold -w 64 | head -n 1)
+   92  dnf -y install phpMyAdmin
+   93  USER_IP=${SSH_CLIENT%% *}
+   94  REPO_HWW="http://m2testbox.harriswebworks.com"
+   95  wget -O /etc/phpMyAdmin/config.inc.php ${REPO_HWW}/config.inc
+   96  sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" /etc/phpMyAdmin/config.inc.php
+   97  sed -i "s/PHPMYADMIN_PLACEHOLDER/mysql_${PMA_FOLDER}/g" /etc/nginx/conf_m${MAGE_VERSION}/phpmyadmin.conf
+   98  htpasswd -b -c /etc/nginx/.mysql mysql ${PMA_PASSWD}
+   99  cat >> /root/mage/cfg/.mage_index <<END
+  100  pma   mysql_${PMA_FOLDER}   mysql   ${PMA_PASSWD}
+  101  END
+  102  localedef -c -f UTF-8 -i en_US en_US.UTF-8
+  103  export LC_ALL=en_US.UTF-8
+  104  sed -i 's/apply_updates = no/apply_updates = yes/' /etc/dnf/automatic.conf
+  105  sed -i 's/emit_via = stdio/emit_via = email/' /etc/dnf/automatic.conf
+  106  MAGE_DOMAIN=docs.harriswebworks.com
+  107  sed -i "s/email_from =.*/email_from = dnf-automatic@${MAGE_DOMAIN}/" /etc/dnf/automatic.conf
+  108  MAGE_ADMIN_EMAIL=emirajbbd@gmail.com
+  109  sed -i "s/email_to = root/email_to = ${MAGE_ADMIN_EMAIL}/" /etc/dnf/automatic.conf
+  110  systemctl enable --now dnf-automatic.timer
+  111  wget -q https://dl.eff.org/certbot-auto -O /usr/local/bin/certbot-auto
+  112  chmod +x /usr/local/bin/certbot-auto
+  113  certbot-auto --install-only
+  114  MAGE_WEB_ROOT_PATH=/home/accufmdev/public_html/
+  115  certbot-auto certonly --agree-tos --no-eff-email --email ${MAGE_ADMIN_EMAIL} --webroot -w ${MAGE_WEB_ROOT_PATH}
+  116  openssl dhparam -dsaparam -out /etc/ssl/certs/dhparams.pem 4096
+  117  openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout /etc/ssl/certs/default_server.key -out /etc/ssl/certs/default_server.crt -subj "/CN=default_server" -days 3650 -subj "/C=US/ST=Oregon/L=Portland/O=default_server/OU=Org/CN=default_server"
+  118  MAGE_OWNER=accufmdev
+  119  cat > /etc/logrotate.d/magento <<END
+  120  ${MAGE_WEB_ROOT_PATH}/var/log/*.log
+  121  {
+  122  su ${MAGE_OWNER} ${MAGE_OWNER}
+  123  create 666 ${MAGE_OWNER} ${MAGE_OWNER}
+  124  weekly
+  125  rotate 2
+  126  notifempty
+  127  missingok
+  128  compress
+  129  }
+  130  END
+  131  REPO_MAGE_TMP="https://raw.githubusercontent.com/emirajbbd/Magento-2-server-installation-1/master/"
+  132  wget -qO /etc/systemd/system/service-status-mail@.service ${REPO_MAGE_TMP}service-status-mail@.service
+  133  wget -qO /usr/local/bin/service-status-mail.sh ${REPO_MAGE_TMP}service-status-mail.sh
+  134  MAGEADMINEMAIL=emirajbbd@gmail.com
+  135  sed -i "s/MAGEADMINEMAIL/${MAGE_ADMIN_EMAIL}/" /usr/local/bin/service-status-mail.sh
+  136  MAGE_DOMAIN=docs.harriswebworks.com
+  137  sed -i "s/DOMAINNAME/${MAGE_DOMAIN}/" /usr/local/bin/service-status-mail.sh
+  138  chmod u+x /usr/local/bin/service-status-mail.sh
+  139  systemctl daemon-reload
+  140  mkdir -p /etc/httpd/conf.d/ssl/
+  141  wget /etc/httpd/conf.d/ssl/${MAGE_OWNER}.zip ${REPO_HWW}/ssl.zip
+  142  unzip /etc/httpd/conf.d/ssl/${MAGE_OWNER}.zip -d /etc/httpd/conf.d/ssl
+  143  cd /
+  144  wget /etc/httpd/conf.d/ssl/${MAGE_OWNER}.zip ${REPO_HWW}/ssl.zip
+  145  wget -qO /etc/httpd/conf.d/ssl/${MAGE_OWNER}.zip ${REPO_HWW}/ssl.zip
+  146  unzip /etc/httpd/conf.d/ssl/${MAGE_OWNER}.zip -d /etc/httpd/conf.d/ssl
+  147  mv /etc/httpd/conf.d/ssl/ssl /etc/httpd/conf.d/ssl/${MAGE_OWNER}
+  148  mv /var/lib/mysql/ca.pem /var/lib/mysql/ca.pem.back
+  149  mv /var/lib/mysql/ca-key.pem /var/lib/mysql/ca-key.pem.back
+  150  cp /etc/httpd/conf.d/ssl/${MAGE_OWNER}/ssl.cert /var/lib/mysql/ca.pem && cp /etc/httpd/conf.d/ssl/${MAGE_OWNER}/ssl.pk /var/lib/mysql/ca-key.pem
+  151  service mysqld restart
+  152  cd /usr/local/src
+  153  git clone https://github.com/allinurl/goaccess.git
+  154  cd goaccess
+  155  autoreconf -fi
+  156  ./configure --enable-utf8 --enable-geoip=legacy --with-openssl
+  157  make > goaccess-make-log-file
+  158  make install > goaccess-make-log-file
+  159  sed -i '13s/#//' /usr/local/etc/goaccess/goaccess.conf
+  160  sed -i '36s/#//' /usr/local/etc/goaccess/goaccess.conf
+  161  sed -i '70s/#//' /usr/local/etc/goaccess/goaccess.conf
+  162  sed -i "s,#ssl-cert.*,ssl-cert /etc/letsencrypt/live/${MAGE_DOMAIN}/fullchain.pem," /usr/local/etc/goaccess/goaccess.conf
+  163  sed -i "s,#ssl-key.*,ssl-key /etc/letsencrypt/live/${MAGE_DOMAIN}/privkey.pem," /usr/local/etc/goaccess/goaccess.conf
+  164  systemctl restart php-fpm.service
+  165  cd /
+  166  wget -qO /etc/mail/sendmail.zip ${REPO_HWW}/scripts/sendmail.zip
+  167  unzip /etc/mail/sendmail.zip -d /etc/mail
+  168  mv /etc/mail/sendmail/* /etc/mail/
+  169  y
+  170  rm -rf /etc/mail/sendmail.zip
+  171  cat > /etc/mail/virtusertable <<END
+  172  root@${MAGE_DOMAIN}  ${MAGE_OWNER}
+  173  END
+  174  sudo makemap hash /etc/mail/authinfo.db < /etc/mail/authinfo
+  175  sudo makemap hash /etc/mail/access.db < /etc/mail/access
+  176  sudo chmod 666 /etc/mail/sendmail.cf
+  177  sudo m4 /etc/mail/sendmail.mc > /etc/mail/sendmail.cf
+  178  sudo chmod 644 /etc/mail/sendmail.cf
+  179  sudo makemap hash /etc/mail/virtusertable < /etc/mail/virtusertable
+  180  systemctl daemon-reload
+  181  systemctl restart sendmail.service
+  182  echo ${MAGE_WEB_ROOT_PATH%/*}
+  183  setfacl -Rdm u:${MAGE_OWNER}:rwx,g:${MAGE_OWNER}:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
+  184   var generated pub/static pub/media
+  185  setfacl -Rm u:${MAGE_OWNER}:rwx ${MAGE_WEB_ROOT_PATH%/*}
+  186  chmod +x /usr/local/bin/*
+  187  usermod -G apache ${MAGE_OWNER}
+  188  cd /home/accufmdev/
+  189  wget ${REPO_HWW}/bash_profile.zip
+  190  unzip bash_profile.zip
+  191  sed -i "s/MAGEWEBUESR/${MAGE_OWNER}/" .bash_profile
+  192  rm -rf bash_profile.zip
+  193  service iptables stop
+  194  service firewalld stop
+  195  systemctl disable firewalld
+  196  chkconfig firewalld off
+  197  cd /
+  198  echo "PS1='\[\e[37m\][\[\e[m\]\[\e[32m\]\u\[\e[m\]\[\e[37m\]@\[\e[m\]\[\e[35m\]\h\[\e[m\]\[\e[37m\]:\[\e[m\]\[\e[36m\]\W\[\e[m\]\[\e[37m\]]\[\e[m\]$ '" >> /etc/bashrc
+  199  HOSTNAME=docs.harriswebworks.com
+  200  MAGE_TIMEZONE=America/New_York
+  201  MAGE_DOMAIN=docs.harriswebworks.com
+  202  MAGE_ADMIN_EMAIL=emirajbbd@gmail.com
+  203  ed -i "s/\[www\]/\[${MAGE_OWNER}\]/" /etc/php-fpm.d/www.conf
+  204  sed -i "s/\[www\]/\[${MAGE_OWNER}\]/" /etc/php-fpm.d/www.conf
+  205  sed -i "s/user = apache/user = ${MAGE_OWNER}/" /etc/php-fpm.d/www.conf
+  206  sed -i "s/group = apache/group = ${MAGE_OWNER}/" /etc/php-fpm.d/www.conf
+  207  sed -i "s/^listen =.*/listen = 127.0.0.1:9000/" /etc/php-fpm.d/www.conf
+  208  sed -i "s/;listen.owner = nobody/listen.owner = ${MAGE_OWNER}/" /etc/php-fpm.d/www.conf
+  209  sed -i "s/;listen.group = nobody/listen.group = ${MAGE_OWNER}/" /etc/php-fpm.d/www.conf
+  210  sed -i "s/;env\[HOSTNAME\] = \$HOSTNAME/env\[HOSTNAME\] = \$HOSTNAME/" /etc/php-fpm.d/www.conf
+  211  sed -i "s/;env\[PATH\] = \/usr\/local\/bin:\/usr\/bin:\/bin/env\[PATH\] = \/usr\/local\/bin:\/usr\/bin:\/bin/" /etc/php-fpm.d/www.conf
+  212  sed -i "s/;env\[TMP\] = \/tmp/env\[TMP\] = \/tmp/" /etc/php-fpm.d/www.conf
+  213  sed -i "s/;env\[TMPDIR\] = \/tmp/env\[TMPDIR\] = \/tmp/" /etc/php-fpm.d/www.conf
+  214  sed -i "s/;env\[TEMP\] = \/tmp/env\[TEMP\] = \/tmp/" /etc/php-fpm.d/www.conf
+  215  sed -i '/PHPSESSID/d' /etc/php.ini
+  216  sed -i "s,.*date.timezone.*,date.timezone = ${MAGE_TIMEZONE}," /etc/php.ini
+  217  sed -i '/sendmail_path/,$d' /etc/php-fpm.d/www.conf
+  218  ln  -sf /usr/share/zoneinfo/America/New_York /etc/localtime
+  219  mkdir -p /var/php-fpm/ && chown -R ${MAGE_OWNER}:${MAGE_OWNER} /var/php-fpm
+  220  service php-fpm restart
+  221  ps auwx
+  222  free -m
+  223  service mysqld restart
+  224  free -m
+  225  nginx -t
+  226  service nginx start
+  227  ps auwx
+  228  exit
+  229  ps auwx
+  230  exit
+  231  MAGE_VERSION=2
+  232  NGINX_BASE="https://raw.githubusercontent.com/magenx/Magento-nginx-config/master/"
+  233  wget -qO /etc/nginx/fastcgi_params  ${NGINX_BASE}magento${MAGE_VERSION}/fastcgi_params
+  234  wget -qO /etc/nginx/nginx.conf  ${NGINX_BASE}magento${MAGE_VERSION}/nginx.conf
+  235  exit
+  236  service nginx restart
+  237  exit
+  238  mysql
+  239  ls
+  240  cd /home/accufmdev/
+  241  ls
+  242  cd public_html/
+  243  ls
+  244  cd docshare/
+  245  ls
+  246  crontab -l
+  247  su - accufmdev
+  248  exit
+  249  passwd accufmdev
+  250  cd /home/accufmdev/public_html/
+  251  ls –a
+  252  cd docshare/
+  253  ls –a
+  254  ls
+  255  cd msds
+  256  ls
+  257  ls -alh
+  258  ps auwx
+  259  service nginx restart
+  260  ln -s /etc/nginx/sites-available/magento2.conf /etc/nginx/sites-enabled/magento2.conf
+  261  service nginx restart
+  262  journalctl -xe
+  263  service nginx restart
+  264  journalctl -xe
+  265  service nginx restart
+  266  journalctl -xe
+  267  service nginx restart
+  268  cd /home/accufmdev/
+  269  ls -alh
+  270  cd public_html/
+  271  ls -alh
+  272  cd ..
+  273  chown -R accufmdev:accufmdev public_html
+  274  cd public_html/
+  275  ls -alh
+  276  service nginx restart
+  277  ps auwx
+  278  service nginx restart
+  279  service php-fpm restart
+  280  service nginx restart
+  281  phpenmod mcrypt
+  282  service nginx restart
+  283  exit
+  284  service php-fpm restart
+  285  exit
+  286  nginx -t
+  287  service nginx restart
+  288  nginx -t
+  289  service nginx restart
+  290  nginx -t
+  291  service nginx restart
+  292  nginx -t
+  293  service nginx restart
+  294  exit
+  295  history

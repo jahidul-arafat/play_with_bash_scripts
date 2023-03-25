@@ -1,0 +1,7 @@
+Create a file containing just this data:
+
+lG5Ftvg2axtnkn9-oDdzQd6YiM4ggZ1fuQOJ49CQ9IQ.6yPTe1rPQex6-LhN903aJwnxPyNxpYe4oNJTs7HWpsM
+
+And make it available on your web server at this URL:
+
+http://inventory-direct.harriswebworks.com/.well-known/acme-challenge/lG5Ftvg2axtnkn9-oDdzQd6YiM4ggZ1fuQOJ49CQ9IQ

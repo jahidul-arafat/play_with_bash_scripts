@@ -1,0 +1,1 @@
+https://moodleonaws.blogspot.com/2013/05/auto-scaling-moodle-deployment-on-aws.html

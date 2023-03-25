@@ -1,0 +1,15 @@
+UVdesk api document
+--------------------
+https://www.youtube.com/watch?v=m-zrtOuGwpU
+https://github.com/uvdesk/api-bundle
+https://github.com/uvdesk/api-bundle/wiki/Ticket-Related-APIs
+
+API Visulaization
+-------------------
+https://learning.postman.com/docs/sending-requests/visualizer/
+https://www.youtube.com/watch?time_continue=140&v=i1jU-kivApg&feature=emb_logo
+https://blog.postman.com/visualizing-open-brewery-data-with-bootstrap/
+
+API Documentation
+------------------
+https://www.postman.com/api-documentation-tool/

@@ -1,0 +1,27 @@
+258  dnf module disable php:remi-7.3
+ 259  dnf module enable php:remi-7.3
+ 260  dnf remove php*
+ 261  PHP_PACKAGES=(cli common fpm opcache gd curl mbstring bcmath soap mcrypt mysqlnd pdo xml xmlrpc intl gmp gettext-gettext phpseclib recode symfony-class-loader symfony-common tcpdf tcpdf-dejavu-sans-fonts tidy snappy lz4 maxminddb phpiredis sodium )
+ 262  PHP_PECL_PACKAGES=(pecl-redis pecl-lzf pecl-geoip pecl-zip pecl-memcache pecl-oauth pecl-imagick pecl-igbinary)
+ 263  dnf install php ${PHP_PACKAGES[@]/#/php-}
+ 264  dnf install ${PHP_PECL_PACKAGES[@]/#/php-}
+ 265  dnf install phpMyAdmin
+ 266  service php-fpm restart
+ 267  exit
+ 268  grep -r -H 'memory_limit' /etc/
+ 269  exit
+ 270  dnf remove Percona-Server-server* Percona-Server-client* percona*
+ 271  REPO_PERCONA="https://repo.percona.com/yum/percona-release-latest.noarch.rpm"
+ 272  dnf install -y  ${REPO_PERCONA}
+ 273  sudo dnf module disable -y mysql
+ 274  sudo percona-release setup ps80 -y
+ 275  sudo dnf install -y percona-server-server percona-server-client
+ 276  sudo percona-release enable-only tools release
+ 277  chmod 0666 /var/log/mysqld.log
+ 278  rpm  --quiet -qi percona-server-server percona-server-client
+ 279  sudo dnf -y  install percona-toolkit percona-xtrabackup-80
+ 280  systemctl daemon-reload
+ 281  sudo systemctl enable --now mysqld
+ 282  mysql -v
+ 283  mysql -uroot -p
+ 284  service mysqld restart

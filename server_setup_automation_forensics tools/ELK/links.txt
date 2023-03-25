@@ -1,0 +1,19 @@
+Installation: https://phoenixnap.com/kb/install-elk-stack-centos-8
+
+Logstash configuration Example
+---------------------------
+https://www.elastic.co/guide/en/logstash/current/config-examples.html
+https://logz.io/blog/apache-logs-web-server-monitoring/
+https://www.elastic.co/guide/en/beats/filebeat/7.8/filebeat-module-logstash.html
+
+X-pack
+---------
+https://www.elastic.co/guide/en/kibana/current/using-kibana-with-security.html
+
+kibana
+-------
+https://www.elastic.co/guide/en/kibana/current/monitoring-data.html
+
+ES
+---
+https://maxchadwick.xyz/blog/magento-2-elasticsearch-notes

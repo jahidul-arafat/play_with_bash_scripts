@@ -1,0 +1,3 @@
+A good link
+-------------
+https://askubuntu.com/questions/84483/how-to-completely-uninstall-java

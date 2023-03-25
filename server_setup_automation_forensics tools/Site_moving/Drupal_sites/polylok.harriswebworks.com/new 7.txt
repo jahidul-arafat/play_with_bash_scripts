@@ -1,0 +1,2 @@
+curl --verbose https://live.cardeasexml.com/ultradns.php
+https://webkul.com/blog/elastic-indexes-akeneo/

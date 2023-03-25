@@ -1,0 +1,46 @@
+code;parent;label-en_US
+whats_new;shop;What's New 
+
+women;shop;Women
+w_tops;women;Tops
+w_jackets;w_tops;Jackets
+w_hoodies_sweatshirts;w_tops;Hoodies & Sweatshirts 
+w_tees;w_tops;Tees 
+w_bras_tanks;w_tops;Bras & Tanks
+w_bottoms;women;Bottoms
+w_pants;w_bottoms;Pants 
+w_shorts;w_bottoms;Shorts
+
+men;shop;Men
+m_tops;men;Tops
+m_jackets;m_tops;Jackets
+m_hoodies_sweatshirts;m_tops;Hoodies & Sweatshirts 
+m_tees;m_tops;Tees 
+m_tanks;m_tops;Tanks
+m_bottoms;men;Bottoms 
+m_pants;m_bottoms;Pants 
+m_shorts;m_bottoms;Shorts
+
+gear;shop;Gear
+bags;gear;Bags 
+fitness_equipment;gear;Fitness Equipment 
+watches;gear;Watches 
+
+collections;shop;Collections 
+new_luma_yoga_collection;collections;New Luma Yoga Collection
+erin_recommends;collections;Erin Recommends
+performance_fabrics;collections;Performance Fabrics
+eco_friendly;collections;Eco Friendly
+performance_sortswear_new;collections;Performance Sportswear New
+eco_collection_new;collections;Eco Collection New
+
+training;shop;Training
+video_download;training;Video Download
+
+promotions;shop;Promotions
+women_sale;promotions;Women Sale
+men_sale;promotions;Men Sale
+pants;promotions;Pants
+tees;promotions;Tees
+
+sale;shop;Sale

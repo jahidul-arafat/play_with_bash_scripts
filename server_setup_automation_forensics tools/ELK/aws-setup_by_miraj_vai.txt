@@ -1,0 +1,4 @@
+vzctl set 107  --ram 12G --swap 18G --save
+vzctl enter 107
+free -m
+curl -X GET "172.31.3.173:9200/_cluster/health?wait_for_status=yellow&timeout=50s&pretty"

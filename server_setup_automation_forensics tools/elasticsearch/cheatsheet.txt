@@ -1,0 +1,5 @@
+https://www.bmc.com/blogs/elasticsearch-commands/
+
+Metricbeat
+-----------
+GET metricbeat-*/_search?q=event.module:mysql

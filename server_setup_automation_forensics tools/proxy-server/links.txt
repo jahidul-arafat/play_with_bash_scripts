@@ -1,0 +1,8 @@
+https://dev.to/viralsangani/be-anonymous-create-your-own-proxy-server-with-aws-ec2-2k63
+
+
+Docker in Centos 8
+-------------------
+https://www.linuxtechi.com/install-docker-ce-centos-8-rhel-8/
+If you face depency error in docker start then follow the commands in below link:
+https://support.plesk.com/hc/en-us/articles/360012448554-Unable-to-start-Docker-service-Dependency-failed-for-Docker-Application-Container-Engine

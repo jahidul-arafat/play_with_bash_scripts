@@ -1,0 +1,86 @@
+usync/piblic_html/ajaxphp
+-------------------------
+A.  back 
+    A1. .htaccess 
+    A2. t.php               ->ref: (../includes/header.php) --> (   includes/config.php         ref: {  includes/classes/config.php
+                                                                                                        includes/classes/db.php 
+                                                                                                        includes/classes/dbusyc.php
+                                                                                                        includes/classes/dbtools.php 
+                                                                                                        includes/classes/errormessage.php
+                                                                                                        includes/classes/mutex.php 
+                                                                                                        includes/classes/user.php 
+                                                                                                        includes/classes/wpversion.php 
+                                                                                                        includes/classes/poller.php 
+                                                                                                        includes/classes/logger.php 
+                                                                                                        includes/classes/authenticate.php
+                                                                                                     }
+                                                                    includes/constants.inc.php
+                                                                    includes/functions/general.php    
+                                                                    [
+                                                                        function quicklog($line) 
+                                                                        {
+                                                                        
+                                                                            $line = get_timestamp() . ": " . $line . "\n";
+                                                                            $fp = fopen("/www/vhosts/usync/htdocs/logs/quick.log","a");
+                                                                            fwrite($fp, $line);    
+                                                                            fclose($fp);
+
+                                                                        }
+
+                                                                    ]
+
+                                                                    includes/lib/password.php
+                                                                 )
+B. mcheck.php               ->ref: (../includes/header.php)
+                            -> $mutex = new Mutex($_POST['clientid']); <- {usync/public_html/inlcudes/classes/mutex.php}
+C. update_version.php       ->ref: (../includes/header.php)
+                            /*
+                                Script to update "title" or "notes" field on a version record.
+                                Expecting POST to pass
+                                $_POST['id'] - versions.id primary key or "stagingtitle" or "stagingnotes"
+                                $_POST['switch'] - value should be "title" or "notes"
+                                $_POST['data'] - new value
+
+                            */
+
+usync/piblic_html/back
+-------------------------
+tt/tt
+------
+A1. /sample
+++++++++++++++++
+    A11. index.html 
+    A12. main.js
+A2. /src 
+++++++++++++++++
+    A21. jquery.editable.js 
+A3. .gitignore  [.DS_Store]
+A4. bower.json  
+{ 
+    "dependencies": {
+    "jquery": ">1.9.0"
+    },
+    "ignore": [
+    "**/.*",
+    "test",
+    "tests"
+  ]
+A5. HEADER.txt 
+A6. History.txt 
+A7. jquery.editable.js/jquery.editable.min.js 
+A8. LICENSE.txt 
+A9. Makefile 
+A10. README.md 
+
+
+B1. .htaccess 
+B2. index.php                   ->ref: (includes/header.php)
+B3. insertversion.php           ->ref: ("/www/vhosts/usync/htdocs/includes/header.php")
+-------------------------------------------------------------------------------------------
+    $location = "prod_1_03_30_2016_16_37_32";
+    $title = "Production Server 3-30-2016";
+    $notes = "New production server 3-30-2016";
+    $wpversion->insert_version_record($location, $title, $notes);
+-------------------------------------------------------------------------------------------
+
+

@@ -1,0 +1,69 @@
+#1
+Create a file containing just this data:
+
+6sXZAPP_uSdV8zPyURcc_1SPot2z1UaRB_aatIh3-jU.yaJXYxil6a3VvMbSoQSVensGWp-R2U3Sf3GQn7Oa-VA
+
+And make it available on your web server at this URL:
+
+http://liveacadia.harriswebworks.com/.well-known/acme-challenge/6sXZAPP_uSdV8zPyURcc_1SPot2z1UaRB_aatIh3-jU
+
+#2
+Create a file containing just this data:
+
+_6h7qa3CXI1CxzI2v9cY34E9P-T8ouUE0yOH6nfxIzY.yaJXYxil6a3VvMbSoQSVensGWp-R2U3Sf3GQn7Oa-VA
+
+And make it available on your web server at this URL:
+
+http://stagingacadia.harriswebworks.com/.well-known/acme-challenge/_6h7qa3CXI1CxzI2v9cY34E9P-T8ouUE0yOH6nfxIzY
+
+
+#3
+Create a file containing just this data:
+
+siHCsnTJgyIyXJj3Kdof4iBYht-8-tTkKO0y6UM6yW0.yaJXYxil6a3VvMbSoQSVensGWp-R2U3Sf3GQn7Oa-VA
+
+And make it available on your web server at this URL:
+
+http://syncacadia.harriswebworks.com/.well-known/acme-challenge/siHCsnTJgyIyXJj3Kdof4iBYht-8-tTkKO0y6UM6yW0
+
+(This must be set up in addition to the previous challenges; do not remove,
+replace, or undo the previous challenge tasks yet.)
+
+
+Verification report
+---------------------
+Waiting for verification...
+Challenge failed for domain liveacadia.harriswebworks.com
+Challenge failed for domain stagingacadia.harriswebworks.com
+Challenge failed for domain syncacadia.harriswebworks.com
+http-01 challenge for liveacadia.harriswebworks.com
+http-01 challenge for stagingacadia.harriswebworks.com
+http-01 challenge for syncacadia.harriswebworks.com
+Cleaning up challenges
+Some challenges have failed.
+
+IMPORTANT NOTES:
+ - The following errors were reported by the server:
+
+   Domain: liveacadia.harriswebworks.com
+   Type:   dns
+   Detail: DNS problem: NXDOMAIN looking up A for
+   liveacadia.harriswebworks.com - check that a DNS record exists for
+   this domain
+
+   Domain: stagingacadia.harriswebworks.com
+   Type:   dns
+   Detail: DNS problem: NXDOMAIN looking up A for
+   stagingacadia.harriswebworks.com - check that a DNS record exists
+   for this domain
+
+   Domain: syncacadia.harriswebworks.com
+   Type:   dns
+   Detail: DNS problem: NXDOMAIN looking up A for
+   syncacadia.harriswebworks.com - check that a DNS record exists for
+   this domain
+ - Your account credentials have been saved in your Certbot
+   configuration directory at /etc/letsencrypt. You should make a
+   secure backup of this folder now. This configuration directory will
+   also contain certificates and private keys obtained by Certbot so
+   making regular backups of this folder is ideal.

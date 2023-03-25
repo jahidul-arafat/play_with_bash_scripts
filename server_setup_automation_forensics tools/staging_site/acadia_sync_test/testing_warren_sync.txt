@@ -1,0 +1,123 @@
+back/index.php
+	|--> <div class="modal-body">
+    JA Instruction: You are about to publish from Staging to the Live Site.<br>
+    <Br>
+    The staging version titled "<?php echo $user->get_stagetitle();?> (current)", will be replacing "<?php echo $ar[$prodid]['title'];?>".  Previous
+    version will be placed into the archive.
+  </div>
+     |--> ERROR: <?php echo $ar[$prodid]['title'];?>  --> returning NONE
+
+back/insertversion.php
+	|-->   include("/www/vhosts/usync/htdocs/includes/header.php"); ? Where is it?
+	$location = "prod_1_03_30_2016_16_37_32"; #prod_1_06_02_2020_14_43_37
+  	$title = "Production Server 3-30-2016";
+  	$notes = "New production server 3-30-2016";
+
+includes/classes/dbtools.php
+	|--> // to hold dump file of database we're copying        
+        $tmpfile = $config->tmp() . "/" . "$clientid" . "_" . $source . "_" . rand(10000000,99999999) . ".sql";
+                
+        $command = "$mysqldump -R -u" . $dbusername . " -p" . $dbpassword . " -R " . $source . " > $tmpfile";
+		
+		$command22 = "/usr/bin/sed -i -- 's/staging\.acadia/www.acadia/g' $tmpfile";
+
+includes/functions/general.php
+  function create_fingerprint()
+  {
+  
+    $fingerprint = 'WARRENjohnson12500' . $_SERVER['HTTP_USER_AGENT'];
+    $fingerprint = md5($fingerprint . session_id());  
+  
+    return($fingerprint);
+    
+  }
+	function quicklog($line) 
+	  {
+
+		$line = get_timestamp() . ": " . $line . "\n";
+		$fp = fopen("/www/vhosts/usync/htdocs/logs/quick.log","a");
+		fwrite($fp, $line);    
+		fclose($fp);
+
+	  }
+
+includes/config.ini
+--------------------
+logging = "1"
+mask = "0"
+logpath = "/home/usync/public_html/logs/general.log"
+email_alert = "0"
+alert_address = "jahidapon@gmail.com"
+alert_subject = "Critical error logged in Unity Sync"
+alert_from = "usync_alert@harriswebworks.com"
+dbname = "usync"
+dbusername = "root"
+dbpassword = "Bz@?cuN)UO%utYW18533"
+mutexpath = "/home/usync/public_html/tmp"
+tmp = "/home/usync/public_html/tmp"
+versioncue = "/home/usync/public_html/versioncue"
+mysqldump = "/usr/bin/mysqldump"
+mysql = "/usr/bin/mysql"
+copy = "/bin/cp -r"
+versioncuelog = "/home/usync/public_html/logs/versioncue.log"
+migrationlog = "/home/usync/public_html/logs/migration.log"
+databaselog = "/home/usync/public_html/logs/database.log"
+
+includes/header.php
+---------------------
+<?php
+
+  $BASE_PATH = "/home/usync/public_html/";
+  $URL = "http://syncacadia.harriswebworks.com";
+
+  include($BASE_PATH . "includes/config.php");
+  include($BASE_PATH . "includes/constants.inc.php");
+  include($BASE_PATH . "includes/functions/general.php");
+  include($BASE_PATH . "includes/lib/password.php");
+
+  session_start();
+  
+?>
+
+sqldef/back/unity.sql
+---------------------
+DROP TABLE IF EXISTS `users`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `users` (
+  `id` int(6) unsigned NOT NULL AUTO_INCREMENT,
+  `created` datetime NOT NULL,
+  `lastlogin` datetime DEFAULT NULL,
+  `lastid` varchar(25) DEFAULT NULL,
+  `userid` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `productionurl` varchar(255) NOT NULL,
+  `devurl` varchar(255) NOT NULL,
+  `homedirectory` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `userid` (`userid`)
+) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `users`
+--
+
+LOCK TABLES `users` WRITE;
+/*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (1,'2016-02-26 00:00:01','2016-02-26 00:00:01','0','acadiacorporate','1234','prodacadia.jtgservers.com','devacadia.jtgservers.com','/www/vhosts/acadia/htdocs/corporate');
+/*!40000 ALTER TABLE `users` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2016-02-27 14:30:24
+
+

@@ -1,0 +1,6 @@
+webshop iderapharma.harriswebworks.com    /home/iderapharma/public_html    iderapharma   6qum78_jcb]0S6#
+database   localhost   iderapharma_live   wu_iderapharma   8+u0wBgvSh4i7f$1187  ^I$DZ7vz7+tK#!l8874
+pma   mysql_7mep4T   mysql   !3Aha2
+proftpd      7575   6qum78_jcb]0S6#
+staging     /home/staging/public_html    staging   (U0pRbje(F0f9WX
+database   localhost   iderapharma_staging   staging   >@XOjDd[FAtGr%Z8702

@@ -1,0 +1,240 @@
+@cnpim
+------
+33  composer --version
+   34  clear
+   35  composer create-project --prefer-dist      akeneo/pim-community-standard /srv/pim "4.0.*@stable"
+   36  ls
+   37  ll
+   38  cd ..
+   39  ll
+   40  cd public_html/
+   41  composer create-project --prefer-dist akeneo/pim-community-standard /srv/pim "4.0.*@stable"
+   42  composer create-project --prefer-dist akeneo/pim-community-standard . "4.0.*@stable"
+   43  ls
+   44  rm -rf opcache/
+   45  composer create-project --prefer-dist akeneo/pim-community-standard . "4.0.*@stable"
+   46  clear
+   47  exit
+   48  cd public_html/
+   49  php-c-status
+   50  php-cc
+   51  exit
+   52  cd public_html/
+   53  composer create-project --prefer-dist akeneo/pim-community-standard . "4.0.*@stable"
+   54  ls
+   55  rm -rf *
+   56  clear
+   57  composer create-project --prefer-dist akeneo/pim-community-standard . "4.0.*@stable"
+   58  ls -a
+   59  rm -rf .circleci
+   60  composer create-project --prefer-dist akeneo/pim-community-standard . "4.0.*@stable"
+   61  ls -a
+   62  vim .env 
+   63  mysql -u akeneo_pim -p
+   64  vim .env 
+   65  bash vendor/akeneo/pim-community-dev/std-build/install-required-files.sh
+   66  vim .env 
+   67  exit
+   68  history
+   69  ls
+   70  cd public_html/
+   71  ls
+   72  ls -a
+   73  vim .env
+   74  exit
+   75  cd public_html/
+   76  ls -a
+   77  NO_DOCKER=true make prod
+   78  ls -a
+   79  cat .env
+   80  mysql -u akeneo_pim -p
+   81  exit
+   82  cd public_html/
+   83  vim .env 
+   84  ls -a
+   85  exit
+   86  cd public_html/
+   87  ls -a
+   88  NO_DOCKER=true make prod
+   89  vim .env 
+   90  clear
+   91  NO_DOCKER=true make prod
+   92  ls -a
+   93  clear
+   94  exit
+   95  clear
+   96  cd public_html/
+   97  vim .env 
+   98  exit
+   99  cd public_html/
+  100  cd ..
+  101  ls -a
+  102  cat .mysql_history 
+  103  cd public_html/
+  104  cat .env 
+  105  exit
+  106  cd public_html/
+  107  clear
+  108  NO_DOCKER=true make prod
+  109  mysql -u akeneo_pim -p
+  110  clear
+  111  ls -a
+  112  cd ..
+  113  ls -a
+  114  cd public_html/
+  115  ls -a
+  116  ll -a
+  117  find . -type d -print0 | xargs -r0 chmod 777 && find . -type f -print0 | xargs -r0 chmod 666
+  118  ll -a
+  119  exit
+  120  clear
+  121  cd public_html/config/
+  122  ls
+  123  vim bundles.php 
+  124  cd packages/
+  125  ls
+  126  vim security.yml 
+  127  cd dev/
+  128  ls
+  129  vim oneup_flysystem.yml 
+  130  cd ..
+  131  ls
+  132  cd dev/
+  133  ls
+  134  cd ..
+  135  ls
+  136  cd services/
+  137  ls
+  138  vim services.yml 
+  139  cd
+  140  cd public_html/
+  141  ls
+  142  cd docker
+  143  ls
+  144  vim akeneo.conf 
+  145  exit
+  146  clear
+  147  cd public_html/
+  148  ls
+  149  bin/console pim:installer:check-requirements
+  150  find . -type d -print0 | xargs -r0 chmod 777 && find . -type f -print0 | xargs -r0 chmod 666 && chmod u+x bin/console
+  151  bin/console pim:installer:check-requirements
+  152  chmod -R 777 ./var/cache/**
+  153  chmod -R 777 ./var/logs/**
+  154  bin/console akeneo:batch:job-queue-consumer-daemon --env=prod
+  155  exit
+  156  cd public_html/
+  157  php bin/console akeneo:elasticsearch:reset-indexes --env=prod
+  158  exit
+  159  sudo systemctl status pim_job_queue@1
+  160  sudo systemctl restart pim_job_queue@1
+  161  sudo systemctl status pim_job_queue@1
+  162  cd public_html/
+  163  php bin/console akeneo:elasticsearch:reset-indexes --env=prod
+  164  clear
+  165  bin/console pim:completeness:calculate --env=prod > var/logs/calculate_completeness.log 
+  166  cd var/logs/
+  167  ls
+  168  cat calculate_completeness.log 
+  169  cd
+  170  cd public_html/
+  171  bin/console pim:versioning:refresh --env=prod
+  172  bin/console pim:versioning:purge –more-than-days 90
+  173  bin/console pim:versioning:purge --more-than-days 90
+  174  bin/console akeneo:connectivity-audit:update-data
+  175  bin/console akeneo:batch:purge-job-execution
+  176  bin/console pim:volume:aggregate
+  177  30 1 * * * /usr/bin/php /home/cnpim/public_html/bin/console pim:completeness:calculate --env=prod > /home/cnpim/public_html/var/logs/calculate_completeness.log 2>&1 >> rootcron
+  178  cat rootcron 
+  179  touch rootcron
+  180  30 1 * * * /usr/bin/php /home/cnpim/public_html/bin/console pim:completeness:calculate --env=prod > /home/cnpim/public_html/var/logs/calculate_completeness.log 2>&1 >> rootcron
+  181  cat rootcron 
+  182  crontab -e
+  183  crontab -l
+  184  clear
+  185  exit
+  186  clear
+  187  exit
+  188  cd public_html/
+  189  clear
+  190  ls
+  191  crontab -l
+  192  /usr/bin/php /home/cnpim/public_html/bin/console pim:completeness:calculate --env=prod
+  193  crontab -l
+  194   /usr/bin/php /home/cnpim/public_html/bin/console pim:versioning:purge --more-than-days 90
+  195  /usr/bin/php /home/cnpim/public_html/bin/console akeneo:connectivity-audit:update-data
+  196  crontab -l
+  197  /usr/bin/php /home/cnpim/public_html/bin/console akeneo:batch:purge-job-execution
+  198  /usr/bin/php /home/cnpim/public_html/bin/console pim:volume:aggregate
+  199  history
+  200  php bin/console akeneo:elasticsearch:reset-indexes --env=prod
+  201  exit
+  202  history
+  203  exit
+  204  history
+  205  clear
+  206  curl -XGET 'http://localhost:9200/_cat/indices?v'
+  207  cd public_html/
+  208  php bin/console akeneo:elasticsearch:reset-indexes --env=prod
+  209  bin/console pim:user:create cnadmin TraCK942AR jarafat@harriswebworks.com Super Admin en_US --admin -n --env=prod
+  210  php bin/console akeneo:elasticsearch:reset-indexes --env=prod
+  211  clear
+  212  exit
+  213  crontab -l
+  214  exit
+  215  cd public_html/
+  216  cat .env
+  217  source .env
+  218  crontab -l
+  219  /usr/bin/php /home/cnpim/public_html/bin/console akeneo:connectivity-audit:update-data
+  220   /usr/bin/php /home/cnpim/public_html/bin/console pim:completeness:calculate --env=prod
+  221  php bin/console akeneo:elasticsearch:reset-indexes --env=prod
+  222  exit
+  223  ls
+  224  cd public_html
+  225  ls
+  226  php bin/console akeneo:batch:job-queue-consumer-daemon --env=prod
+  227  ls
+  228  cd public_html
+  229  ls
+  230  php bin/console akeneo:batch:job-queue-consumer-daemon --env=prod
+  231  ls
+  232  cd public_html
+  233  ls
+  234  service elasticsearch status
+  235  systemctl enable elasticsearch.service
+  236  systemctl start elasticsearch.service
+  237  history
+  238  exit
+  239  ls
+  240  cd public_html
+  241  ls
+  242  cd public
+  243  ls
+  244  php test.php
+  245  ls
+  246  service elasticsearch status
+  247  sudo service elasticsearch status
+  248   service elasticsearch status
+  249  ls
+  250  cd public_html
+  251  ls
+  252  php bin/console pim:product:index --all --env=prod
+  253  php bin/console akeneo:batch:job-queue-consumer-daemon --env=prod
+
+
+  @root user 
+  -----------
+  vim /etc/systemd/system/pim_job_queue@.service
+  695  systemctl status pim_job_queue@*
+  696  systemctl status pim_job_queue@1
+  697  systemctl start pim_job_queue@1
+  698  systemctl status pim_job_queue@1
+  699  systemctl enable pim_job_queue@1
+  700  journalctl --unit=pim_job_queue@1 -f
+  701  vim /etc/systemd/system/pim_job_queue@.service
+  702  systemctl daemon-reload
+  703  systemctl restart pim_job_queue@1
+  704  systemctl status pim_job_queue@1
+  705  curl -XGET 'http://localhost:9200'
+  706  curl -XGET 'http://localhost:9200/_cat/indices?v'

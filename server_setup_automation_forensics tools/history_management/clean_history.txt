@@ -1,0 +1,13 @@
+Clean the current sheel history exected by me
+----------------------------------------------
+> history -c 
+
+Clean all history permanently 
+-----------------------------
+@root 
+-------
+> cat /dev/null > ~/.bash_history 
+
+@jahid 
+------
+cat /dev/null > .bash_history 

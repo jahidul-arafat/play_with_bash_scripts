@@ -1,0 +1,7 @@
+Create a file containing just this data:
+
+hpxR5MEbTwDeZEm-Vs-80QMY_mOEczXq9KcAOf8zen0.suLXUVfg1oxkJrq9abX9DMrQf7T4QShflA566yF14CE
+
+And make it available on your web server at this URL:
+
+http://cnpim.harriswebworks.com/.well-known/acme-challenge/hpxR5MEbTwDeZEm-Vs-80QMY_mOEczXq9KcAOf8zen0

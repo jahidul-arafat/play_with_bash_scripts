@@ -1,0 +1,179 @@
+PART-O: Webserver Setup @root 
+------------------------------
+> cd /etc/apache2/sites-available 
+> vim pim_luma.conf 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Custom config : Adding the Akeneo PIM Luma by jahid
+<VirtualHost *:80>
+ServerName pimluma.hww
+ServerAlias pimluma.hww
+
+DocumentRoot /var/www/pim/public_html/luma/public   #<--------check here (public)
+ErrorLog /var/www/pim/logs/luma/error_log
+CustomLog /var/www/pim/logs/luma/access_log combined
+
+ProxyFCGIBackendType FPM
+<Location />
+DirectoryIndex index.php index.html
+</Location>
+#SetOutputFilter DEFLATE
+    AddHandler "proxy:unix:/run/php/php7.3-fpm.sock|fcgi://localhost/" php
+        #AddHandler "proxy:fcgi://127.0.0.1:9000" php
+<FilesMatch "\.php$">
+    SetHandler "proxy:unix:/run/php/php7.3-fpm.sock|fcgi://localhost/"
+    #SetHandler "proxy:fcgi://127.0.0.1:9000"
+</FilesMatch>
+<Directory /var/www/pim/public_html>
+  Options IncludesNOEXEC FollowSymLinks
+  Require all granted
+  AllowOverride All
+</Directory>
+
+</Virtualhost>
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+> a2ensite pim_luma.conf 
+> apache2ctl configtest 
+> systemctl restart apache2
+> systemctl restart php7.3-fpm 
+
+
+PART-1:Installing Akeneo 4 using Composer @jahid 
+-------------------------------------------------
+> cd /var/www/pim/public_html/luma/
+> composer create-project --prefer-dist akeneo/pim-community-standard . "4.0.*@stable"
+> bash vendor/akeneo/pim-community-dev/std-build/install-required-files.sh
+
+PART-2: Setting the file permissions 
+-------------------------------------
+2a. as @root 
+=============
+MAGE_WEB_ROOT_PATH="/var/www/pim/public_html"
+MAGE_WEB_USER=jahid
+chown -R ${MAGE_WEB_USER}:${MAGE_WEB_USER} ${MAGE_WEB_ROOT_PATH}
+cd ${MAGE_WEB_ROOT_PATH}
+find . -type f -exec chmod 666 {} \;
+find . -type d -exec chmod 2777 {} \;
+setfacl -Rdm u:${MAGE_WEB_USER}:rwx,g:${MAGE_WEB_USER}:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
+setfacl -Rm u:${MAGE_WEB_USER}:rwx ${MAGE_WEB_ROOT_PATH%/*}
+
+2b. as @jahid 
+==============
+> cd /var/www/pim/public_html/luma/
+> find . -type d -print0 | xargs -r0 chmod 777 && find . -type f -print0 | xargs -r0 chmod 666 && chmod u+x bin/console
+> vim public/.htaccess
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+RewriteEngine On
+  
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ index.php [QSA,L]
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+> chmod 666 public/.htaccess 
+
+PART-3: Setting the .env file as @jahid
+---------------------------------------
+> vim .env
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+APP_ENV=prod
+APP_DEBUG=0
+APP_DATABASE_HOST=localhost
+APP_DATABASE_PORT=null
+APP_DATABASE_NAME=akeneo_pim
+APP_DATABASE_USER=jahid
+APP_DATABASE_PASSWORD=11mja2018
+APP_DEFAULT_LOCALE=en
+APP_SECRET=ThisTokenIsNotSoSecretChangeIt
+APP_INDEX_HOSTS=localhost:9200
+APP_PRODUCT_AND_PRODUCT_MODEL_INDEX_NAME=akeneo_pim_product_and_product_model
+MAILER_URL=null://localhost
+AKENEO_PIM_URL=http://localhost:80
+APP_ELASTICSEARCH_TOTAL_FIELDS_LIMIT=10000
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+PART-4: Installing the GhostScript V 9.27 and Yarnpkg(default in Ubuntu 18.04 is 9.26)
+----------------------------------------------------------------------------------------
+#ghostscript
+=============
+> which gs # if gs version is 9.26, then the AKeneo PIM 4 installation will not work. It requires at least 9.27.X
+# Download the GhostScript 9.27 as requires from 
+https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/tag/gs927
+> cd /home/jahid/Download 
+> tar xvf ghostscript-9.27-linux-x86_64.tgz
+> sudo cp gs-927-linux-x86_64 /usr/bin/gs
+> gs -v # 9.27
+
+#yarn 
+======
+> curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+> echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+> sudo apt update && sudo apt install yarn
+> yarn --version
+> which yarn
+> nodejs -v
+
+#aspell
+-------
+> apt-get install aspell
+
+
+
+PART-5: Check whether the Akeneo Installation meet system requirements @jahid   
+-----------------------------------------------------------------------------
+> cd /var/www/pim/public_html/luma/
+> bin/console pim:installer:check-requirements
+> chmod -R 777 ./var/cache/**
+> chmod -R 777 ./var/logs/**
+
+PART-6: Install the Akeneo PIM DB Schema and check the job daemon @jahid 
+--------------------------------------------------------------------------
+> NO_DOCKER=true make prod    # NO_DOCKER=true make dev   <--- you can try this dev mode too 
+> bin/console akeneo:batch:job-queue-consumer-daemon --env=prod   --> then press (CTRL+X)
+
+PART-7: Create a new daemon pim_job_queue@.service @root 
+--------------------------------------------------------
+> vim /etc/systemd/system/pim_job_queue@.service
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[Unit]
+Description=Akeneo PIM Job Queue Service (#%i)
+
+[Service]
+Type=simple
+User=jahid
+Group=jahid
+WorkingDirectory=/var/www/pim/public_html/luma/
+ExecStart=/var/www/pim/public_html/luma/bin/console akeneo:batch:job-queue-consumer-daemon --env=prod
+After=apache2.service
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> systemctl daemon-reload 
+> systemctl start pim_job_queue@1
+> systemctl enable pim_job_queue@1
+> systemctl status pim_job_queue@1
+> curl -XGET 'http://localhost:9200'
+> curl -XGET 'http://localhost:9200/_cat/indices?v'
+
+PART-8: Create the cronjob under @jahid 
+----------------------------------------
+> crontab -e 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+30 1 * * * /usr/bin/php /var/www/pim/public_html/luma/bin/console pim:completeness:calculate --env=prod > /var/www/pim/public_html/luma/var/logs/calculate_completeness.log 2>&1
+30 2 * * * /usr/bin/php /var/www/pim/public_html/luma/bin/console pim:versioning:purge --more-than-days 90 2>&1
+1  * * * * /usr/bin/php /var/www/pim/public_html/luma/bin/console akeneo:connectivity-audit:update-data 2>&1
+20 0 1 * * /usr/bin/php /var/www/pim/public_html/luma/bin/console akeneo:batch:purge-job-execution 2>&1
+30 4 * * * /usr/bin/php /var/www/pim/public_html/luma/bin/console pim:volume:aggregate 2>&1
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+> crontab -l
+
+PART-9: Create Akeneo Admin user for login 
+---------------------------------------------
+> bin/console pim:user:create pimadmin 11mja2018 jahidapon@gmail.com Super Admin en_US --admin -n --env=prod
+
+PART-10: After importing any data run the below commands 
+---------------------------------------------------------
+> php bin/console pim:product:index --all --env=prod
+> php bin/console akeneo:elasticsearch:reset-indexes --env=prod

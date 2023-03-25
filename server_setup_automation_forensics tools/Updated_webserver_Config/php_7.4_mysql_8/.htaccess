@@ -1,0 +1,4 @@
+RewriteEngine On
+RewriteBase /
+RewriteCond %{HTTP_HOST} ^www.jahidularafat.accucluster.com [NC]
+RewriteRule ^(.*)$ http://jahidularafat.accucluster.com/$1 [L,R=301]

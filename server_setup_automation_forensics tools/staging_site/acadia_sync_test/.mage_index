@@ -1,0 +1,10 @@
+webshop liveacadia.harriswebworks.com    /home/acadia/public_html    acadia   <%id&oQjJ8]uRNW
+webshop stagingacadia.harriswebworks.com    /home/staging/public_html    staging   <%id&oQjJ8]uRNW
+webshop syncacadia.harriswebworks.com    /home/usync/public_html    usync   <%id&oQjJ8]uRNW
+
+
+database   localhost   acadia_live   acadia   <ZAJ%HTh}X9>$ja15040  Bz@?cuN)UO%utYW18533
+database   localhost   acadia_staging   staging   <ZAJ%HTh}X9>$ja15040  Bz@?cuN)UO%utYW18533
+database   localhost   acadia_sync   usync   <ZAJ%HTh}X9>$ja15040  Bz@?cuN)UO%utYW18533
+pma   mysql_vR5ksp   mysql   =Ff!wy
+proftpd   BD   5125   <%id&oQjJ8]uRNW

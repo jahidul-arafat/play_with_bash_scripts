@@ -1,0 +1,44 @@
+PART-A: composer create project @jahid 
+-----------------------------------------
+> cd /var/www/associate_exam/public_html
+> composer create-project --repository=https://repo.magento.com/ magento/project-community-edition . #the latest magento, here current is 2.4.1
+
+PART-B: Magento setup install @jahid
+------------------------------------
+> cd /var/www/associate_exam/public_html
+> bin/magento setup:install \
+--db-host=localhost \
+--db-name="magento2_associate" \
+--db-user="jahid" \
+--db-password="11mja2018" \
+--admin-firstname="JAHIDUL" \
+--admin-lastname="ARAFAT" \
+--admin-email="jahidapon@gmail.com" \
+--admin-user="admin" \
+--admin-password="11mja2018" \
+--language=en_US \
+--currency=USD \
+--timezone=America/Chicago \
+--use-rewrites=1 \
+--search-engine=elasticsearch7 \
+--elasticsearch-host=localhost \
+--elasticsearch-port=9200 \
+--cleanup-database
+
+php bin/magento deploy:mode:show
+php bin/magento deploy:mode:set developer
+bin/magento cron:install [--force]
+bin/magento sampledata:deploy --verbose
+bin/magento setup:upgrade
+bin/magento cache:clean
+bin/magento cache:flush
+
+#Fixing File Permission
+------------------------
+MAGE_WEB_ROOT_PATH="/home/jahid/switterotter_exam/public_html"
+chown -R jahid:jahid /home/jahid/switterotter_exam/public_html
+cd /home/jahid/switterotter_exam/public_html
+find . -type f -exec chmod 666 {} \;
+find . -type d -exec chmod 2777 {} \;
+setfacl -Rdm u:jahid:rwx,g:jahid:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
+setfacl -Rm u:${MAGE_WEB_USER}:rwx ${MAGE_WEB_ROOT_PATH%/*}

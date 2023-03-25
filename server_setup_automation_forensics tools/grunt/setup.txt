@@ -1,0 +1,46 @@
+@root user
+------------
+curl --silent --location https://rpm.nodesource.com/setup_10.x | bash >/dev/null 2>&1
+curl -sL https://dl.yarnpkg.com/rpm/yarn.repo |  tee /etc/yum.repos.d/yarn.repo >/dev/null 2>&1
+yum -y -q install nodejs yarn >/dev/null 2>&1
+npm install -g grunt-cli >/dev/null 2>&1
+
+@webuser
+---------
+Part-1: Setup the local grunt
+------------------------------
+> cd /home/<webuser>/public_html
+> npm install grunt --save-dev
+> npm audit fix
+> npm install
+> npm update
+
+Part-2: Check which local grunt theme is missing
+-------------------------------------------------
+> grunt clean      # this will help you to figure out which theme is missing and require reconfiguration
+
+Part-2: Setup the themes.js as local-themes.js
+-----------------------------------------------
+> cd dev/tools/grunt/configs/
+> cp themes.js local-themes.js
+> vim local-themes.js
+|---> --------------------
+module.exports = {
+  florabella: {
+      area: 'frontend',
+      name: 'Harriswebworks/florabella',     # this is the custom module under app/design/frontend/Harriswebworks/florabella
+      locale: 'en_US',
+      files: [
+          'css/styles-m',
+          'css/styles-l',
+          'css/email',
+          'css/email-inline'
+      ],
+      dsl: 'less'
+  }
+};
+------< --------------------
+
+
+> grunt clean
+> grunt clean && grunt exec && grunt less

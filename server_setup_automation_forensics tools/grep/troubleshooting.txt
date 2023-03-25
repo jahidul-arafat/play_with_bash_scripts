@@ -1,0 +1,18 @@
+> systemctl stop mysqld
+> mysqld_safe --skip-grant-tables
+|--> this will remain in continue, thats why go to the second terminal
+
+# go to a new window , for mysql 5.6
+mysql -u root
+mysql> UPDATE mysql.user SET Password=PASSWORD('password') WHERE User='root';
+
+#For mysql 5.7
+mysql> use mysql;
+mysql> update user set authentication_string=password('password') where user='root';
+
+# now restartthe mysqld , but you will face error
+> systemctl restart mysqld
+|--> if error, then execute
+    |--> killall -9 mysqld mysqld_safe
+
+> systemctl restart mysqld

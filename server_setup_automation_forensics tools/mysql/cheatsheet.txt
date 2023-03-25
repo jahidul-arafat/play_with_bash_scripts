@@ -1,0 +1,5 @@
+https://dev.mysql.com/doc/mysql-getting-started/en/
+
+Multiple MYSQL
+--------------
+https://makandracards.com/makandra/19143-installing-multiple-mysql-versions-on-the-same-linux-with-mysql-sandbox

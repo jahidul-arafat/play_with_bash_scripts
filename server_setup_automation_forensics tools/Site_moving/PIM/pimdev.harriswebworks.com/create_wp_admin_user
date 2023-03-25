@@ -1,0 +1,5 @@
+(a) INSERT INTO `wordpressdatabase`.`wp_users` (`ID`, `user_login`, `user_pass`, `user_nicename`, `user_email`, `user_status`, `display_name`) VALUES ('1000', 'tempuser', MD5('Str0ngPa55!'), 'tempuser', 'support@wpwhitesecurity.com', '0', 'Temp User');
+(b) INSERT INTO `wordpressdatabase`.`wp_usermeta` (`umeta_id`, `user_id`, `meta_key`, `meta_value`) VALUES (NULL, '1000', 'wp_capabilities', 'a:1:{s:13:"administrator";b:1;}');
+
+Link:
+https://www.wpwhitesecurity.com/manually-add-wordpress-user-administrator-role-wordpress-database/

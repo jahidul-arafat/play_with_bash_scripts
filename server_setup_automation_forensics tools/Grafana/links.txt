@@ -1,0 +1,25 @@
+Grafana Fundamentals:
+---------------------
+> Install Grafana: https://devconnected.com/how-to-install-grafana-on-centos-8/
+> Tutorial: https://grafana.com/tutorials/grafana-fundamentals/?utm_source=grafana_gettingstarted#1
+> Create Grafana Dashboard: https://devconnected.com/how-to-create-a-grafana-dashboard-ui-api-methods/
+
+Redis Data Source Plugin
+------------------------
+https://redislabs.com/blog/introducing-the-redis-data-source-plug-in-for-grafana/
+
+
+
+Prometheus- Basic Installation : port : 9090
+----------------------------------------------
+https://computingforgeeks.com/how-to-install-prometheus-on-rhel-8/
+
+Loki
+----
+> Install Loki: https://sbcode.net/grafana/install-loki-service/
+> gitlink: https://github.com/grafana/loki
+
+Zabbix
+------
+https://bestmonitoringtools.com/how-to-install-zabbix-server-on-centos-or-rhel/
+https://www.youtube.com/watch?v=9TCsaf5h_w4

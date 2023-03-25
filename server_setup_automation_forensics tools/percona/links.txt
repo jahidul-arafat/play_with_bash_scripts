@@ -1,0 +1,44 @@
+https://www.percona.com/doc/percona-repo-config/percona-release.html
+
+Mytop: https://www.tecmint.com/mytop-mysql-mariadb-database-performance-monitoring-in-linux/
+> mytop --prompt -u accu_user -d accu_sales
+
+Proxysql
+--------
+https://proxysql.com/
+https://hostadvice.com/how-to/how-to-install-and-configure-proxysql-on-centos-7/
+
+xtra dbbackup
+--------------
+https://www.percona.com/doc/percona-xtrabackup/2.2/xtrabackup_bin/creating_a_backup.html
+
+Percona Table Sync
+------------------
+Link: https://www.percona.com/doc/percona-toolkit/LATEST/pt-table-sync.html
+INSERT INTO Persons(PersonID,LastName,FirstName,Address,City)
+VALUES (1,"Jahid","Jahid","Jahid","Jahid");
+
+(a) pt-table-sync h=localhost,P=3306,u=m2u_a1255d4ff49d,p="WCcNxXMZ02lATA>30178",D=m2d_2c7232d0fdba,t=Persons h=localhost,P=3306,u=m2u_a1255d4ff49d,p="WCcNxXMZ02lATA>30178",D=m2d_development --execute
+--> this one may give you the error
+
+
+(b) pt-table-sync h=localhost,P=3306,u=root,p="3d#-FHzNS[Ky#%210537",D=m2d_2c7232d0fdba,t=Persons h=localhost,P=3306,u=root,p="3d#-FHzNS[Ky#%210537",D=m2d_development --execute
+
+
+
+pt-table-sync h=localhost,P=3306,u=root,p="Bz@?cuN)UO%utYW18533",D=acadia_wp_dev_init,t=wp_posts h=localhost,P=3306,u=root,p="Bz@?cuN)UO%utYW18533",D=prod_1_06_02_2020_14_43_37 --execute
+pt-table-sync h=localhost,P=3306,u=root,p="Bz@?cuN)UO%utYW18533",D=acadia_wp_dev_init,t=wp_posts h=localhost,P=3306,u=root,p="Bz@?cuN)UO%utYW18533",D=prod_1_06_02_2020_14_43_37 --execute
+
+Percona user Statistics
+------------------------
+https://www.percona.com/doc/percona-server/LATEST/diagnostics/user_stats.html#TABLE_STATISTICS
+
+
+DB Backup policy
+------------------
+https://severalnines.com/database-blog/mysqldump-or-percona-xtrabackup-backup-strategies-mysql-galera-cluster
+
+
+MYSQL SYNC TEST Link
+--------------------
+https://stackoverflow.com/questions/20020728/how-can-i-describe-all-tables-in-the-database-through-one-statement

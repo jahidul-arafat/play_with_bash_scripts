@@ -1,0 +1,26 @@
+#rootcron
+30 1 * * * /usr/bin/php /home/cnpim/public_html/bin/console pim:completeness:calculate --env=prod > /home/cnpim/public_html/var/logs/calculate_completeness.log 2>&1
+30 2 * * * /usr/bin/php /home/cnpim/public_html/bin/console pim:versioning:purge --more-than-days 90 2>&1
+1  * * * * /usr/bin/php /home/cnpim/public_html/bin/console akeneo:connectivity-audit:update-data 2>&1
+20 0 1 * * /usr/bin/php /home/cnpim/public_html/bin/console akeneo:batch:purge-job-execution 2>&1
+30 4 * * * /usr/bin/php /home/cnpim/public_html/bin/console pim:volume:aggregate 2>&1
+
+crontab rootcron
+rm rootcron
+
+mysql> SHOW VARIABLES LIKE 'validate_password%';
+mysql> SET GLOBAL validate_password_policy=LOW;
+
+mysql> CREATE DATABASE akeneo_pim;
+mysql> CREATE USER akeneo_pim@localhost IDENTIFIED WITH mysql_native_password BY 'akeneo_pim';
+mysql> GRANT ALL PRIVILEGES ON akeneo_pim.* TO akeneo_pim@localhost;
+
+Difference Between AKeneo PIm 4 and 3
+-------------------------------------
+mysql > describe akeneo_connectivity_connection;     <--- this table not exits
+
+#create CNPIM admin user
+bin/console pim:user:create cnadmin TraCK942AR jarafat@harriswebworks.com Super Admin en_US --admin -n --env=prod
+
+Username: cnadmin
+Password: TraCK942AR

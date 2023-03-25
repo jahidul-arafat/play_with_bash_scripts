@@ -1,0 +1,292 @@
+MAGE_DOMAIN=staging.iderapharma.com
+MAGE_WEB_USER=staging
+MAGE_WEB_ROOT_PATH="/home/${MAGE_WEB_USER}/public_html"
+MAGE_DB_HOST=localhost
+MAGE_DB_NAME=iderapharma_staging
+MAGE_DB_USER_NAME=staging
+
+REPO_HWW="http://m2testbox.harriswebworks.com"
+
+#WebUser Creation
+#------------------
+mkdir -p ${MAGE_WEB_ROOT_PATH} && cd $_
+useradd -d ${MAGE_WEB_ROOT_PATH%/*} -s /usr/bin/bash ${MAGE_WEB_USER}
+MAGE_WEB_USER_PASS=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)   #problem
+echo "${MAGE_WEB_USER}:${MAGE_WEB_USER_PASS}"  | chpasswd  >/dev/null 2>&1
+chmod 755 /home/${MAGE_WEB_USER}
+chown -R ${MAGE_WEB_USER}:${MAGE_WEB_USER} ${MAGE_WEB_ROOT_PATH%/*}
+chmod 2777 ${MAGE_WEB_ROOT_PATH}
+setfacl -Rdm u:${MAGE_WEB_USER}:rwx,g:${MAGE_WEB_USER}:rwx,g::rw-,o::- ${MAGE_WEB_ROOT_PATH}
+
+cat >> /root/mage/.mage_index <<END
+staging ${MAGE_DOMAIN}    ${MAGE_WEB_ROOT_PATH}    ${MAGE_WEB_USER}   ${MAGE_WEB_USER_PASS}
+END
+
+
+#mysqld-02
+------------
+systemctl start mysqld.service
+##DB_DRU
+MAGE_DB_PASS_GEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 15 | head -n 1)
+MAGE_DB_PASS="${MAGE_DB_PASS_GEN}${RANDOM}"
+mysql <<EOMYSQL
+CREATE USER '${MAGE_DB_USER_NAME}'@'${MAGE_DB_HOST}' IDENTIFIED BY '${MAGE_DB_PASS}';
+CREATE DATABASE ${MAGE_DB_NAME};
+GRANT ALL PRIVILEGES ON ${MAGE_DB_NAME}.* TO '${MAGE_DB_USER_NAME}'@'${MAGE_DB_HOST}' WITH GRANT OPTION;
+exit
+EOMYSQL
+
+mysql
+|--> SHOW GRANTS FOR 'root'@'localhost';
+|--> SHOW GRANTS FOR 'polylok_polylok'@'localhost';
+|--> SHOW GRANTS FOR 'polylok_user'@'localhost';
+
+cat >> /root/mage/.mage_index <<END
+database   ${MAGE_DB_HOST}   ${MAGE_DB_NAME}   ${MAGE_DB_USER_NAME}   ${MAGE_DB_PASS}
+END
+
+echo "yes" > /root/mage/.database
+
+
+mkdir -p /home/${MAGE_WEB_USER}/logs
+
+cat >> /etc/httpd/conf.d/ssl.conf <<END
+# custom config added
+<VirtualHost ${SERVER_IP_ADDR}:443>
+	SSLEngine on
+	SSLHonorCipherOrder on
+	SSLProxyVerify none
+	SSLProxyEngine On
+	SSLProxyCheckPeerCN off
+	SSLProxyCheckPeerName off
+	SSLProxyCheckPeerExpire off
+	SSLProtocol all -SSLv2 -SSLv3 -TLSv1
+	SSLCipherSuite "EECDH+ECDSA+AESGCM EECDH+aRSA+AESGCM EECDH+ECDSA+SHA384 EECDH+ECDSA+SHA256 EECDH+aRSA+SHA384 EECDH+aRSA+SHA256 EECDH+aRSA+RC4 EECDH EDH+aRSA 3DES !RC4 !aNULL!eNULL !LOW !MD5 !EXP !PSK !SRP !DSS !3DES !DES"
+
+	Protocols h2 h2c http/1.1
+	#Protocols h2 http/1.1
+	#Protocols h2
+	#Protocols http/1.1
+	H2TLSWarmUpSize     0
+	H2TLSCoolDownSecs   0
+
+
+	#   Server Certificate:
+	SSLCertificateFile /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}/ssl.cert
+	#   Server Private Key:
+	SSLCertificateKeyFile /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}/ssl.pk
+	#   Server Certificate Chain:
+	SSLCACertificatePath /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}/
+	SSLCertificateChainFile /etc/httpd/conf.d/ssl/${MAGE_WEB_USER}/bundle.crt
+
+	ServerName ${MAGE_DOMAIN}
+	ServerAlias ${MAGE_DOMAIN}
+	ServerPath /home/${MAGE_WEB_USER}/public_html
+	DocumentRoot /home/${MAGE_WEB_USER}/public_html
+
+	AccessFileName .htaccess
+
+	<Directory "/home/${MAGE_WEB_USER}/public_html">
+		Options IncludesNOEXEC FollowSymLinks Indexes
+		AllowOverride All
+		Require all granted
+
+      <IfModule sapi_apache2.c>
+              php_admin_flag engine on
+      </IfModule>
+
+	</Directory>
+
+	CustomLog /home/${MAGE_WEB_USER}/logs/access_log "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"
+	ErrorLog /home/${MAGE_WEB_USER}/logs/error_log
+
+	ProxyFCGIBackendType FPM
+	<Location />
+		DirectoryIndex index.php index.html
+	</Location>
+	#SetOutputFilter DEFLATE
+
+    AddHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/" php
+	#AddHandler "proxy:fcgi://127.0.0.1:9000" php
+	<FilesMatch "\.php$">
+		SetHandler "proxy:unix:/var/php-fpm/www.sock|fcgi://localhost/"
+        #SetHandler "proxy:fcgi://127.0.0.1:9000"
+	</FilesMatch>
+	<IfModule mod_rewrite.c>
+		RewriteEngine on
+		RewriteCond %{REQUEST_METHOD} ^TRACE
+		RewriteRule .* - [F]
+	</IfModule>
+
+</VirtualHost>
+END
+
+
+#database   localhost   iderapharma_staging   staging   >@XOjDd[FAtGr%Z8702
+
+#hostname+timezone
+#-----------------
+hostnamectl set-hostname ${MAGE_DOMAIN} --static
+timedatectl set-timezone ${MAGE_TIMEZONE}
+rm -rf /etc/localtime
+ln -s /usr/share/zoneinfo/America/New_York /etc/localtime
+touch /etc/default/locale
+
+cat /etc/default/locale <<EOF
+LANG="en_US.utf8"
+LANGUAGE="en_US:"
+EOF
+
+env LC_ALL=en_US.UTF-8 >/dev/null 2>&1
+export LC_ALL
+localectl set-locale LANG=en_US.utf8
+
+#PHP_FPM <-- you might check it manually
+#------------------------------------------
+mkdir -p /var/php-fpm/ && chown -R ${MAGE_WEB_USER}:${MAGE_WEB_USER} /var/php-fpm
+sed -i "s/\[www\]/\[${MAGE_WEB_USER}\]/" /etc/php-fpm.d/www.conf
+sed -i "s/user = apache/user = ${MAGE_WEB_USER}/" /etc/php-fpm.d/www.conf
+sed -i "s/group = apache/group = ${MAGE_WEB_USER}/" /etc/php-fpm.d/www.conf
+sed -i "s/;listen.owner = nobody/listen.owner = ${MAGE_WEB_USER}/" /etc/php-fpm.d/www.conf
+sed -i "s/;listen.group = nobody/listen.group = ${MAGE_WEB_USER}/" /etc/php-fpm.d/www.conf
+sed -i "s/;listen.mode = 0660/listen.mode = 0666/" /etc/php-fpm.d/www.conf
+
+sed -i '/PHPSESSID/d' /etc/php.ini
+sed -i "s,.*date.timezone.*,date.timezone = ${MAGE_TIMEZONE}," /etc/php.ini
+sed -i "s/session.save_handler = files/session.save_handler = redis/" /etc/php.ini
+sed -i "s/session.serialize_handler = php/session.serialize_handler = igbinary/" /etc/php.ini
+
+sed -i "s/listen = \/run\/php-fpm\/www.sock/listen = \/var\/php-fpm\/www.sock/" /etc/php-fpm.d/www.conf
+sed -i "s/listen.acl_users = apache,nginx/listen.acl_users = apache,nginx,${MAGE_WEB_USER}/" /etc/php-fpm.d/www.conf
+sed -i '/sendmail_path/,$d' /etc/php-fpm.d/www.conf
+
+cat >> /etc/php-fpm.d/www.conf <<END
+;;
+;; Custom pool settings
+php_value[soap.wsdl_cache_dir] = /var/lib/php/wsdlcache
+php_flag[display_errors] = off
+php_admin_flag[log_errors] = on
+php_admin_value[error_log] = /home/${MAGE_WEB_USER}/logs/php-fpm-error.log
+php_admin_value[memory_limit] = 1024M
+php_admin_value[date.timezone] = ${MAGE_TIMEZONE}
+END
+
+systemctl daemon-reload
+systemctl restart httpd.service
+
+#PHPMYADMIN
+-------------pcache
+PMA_FOLDER=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 6 | head -n 1)
+PMA_PASSWD=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9!@#$%^&?=+_[]{}()<>-' | fold -w 6 | head -n 1)
+BLOWFISHCODE=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9=+_[]{}()<>-' | fold -w 64 | head -n 1)
+dnf -y install phpMyAdmin
+mv /etc/phpMyAdmin/config.inc.php /etc/phpMyAdmin/config.inc.php.back
+wget -O /etc/phpMyAdmin/config.inc.php ${REPO_HWW}/config.inc
+wget -O /usr/share/phpMyAdmin/.htaccess ${REPO_HWW}/mydb/htaccess
+USER_IP=${SSH_CLIENT%% *}
+sed -i "s/.*blowfish_secret.*/\$cfg['blowfish_secret'] = '${BLOWFISHCODE}';/" /etc/phpMyAdmin/config.inc.php
+sed -i "s/Require local/\<IfModule mod_authz_core.c\>\nRequire all granted\n\<\/IfModule\>\n\<IfModule \!mod_authz_core.c\>\nOrder Deny,Allow\nDeny from All\n Allow from ${SERVER_IP_ADDR}\nAllow from 127.0.0.1\nAllow from ::1\n\<\/IfModule\>/" /etc/httpd/conf.d/phpMyAdmin.conf
+
+cat >> /root/mage/.mage_index <<END
+pma   mysql_${PMA_FOLDER}   mysql   ${PMA_PASSWD}
+END
+
+
+#DNF_AUTOMATION
+----------------
+sed -i 's/apply_updates = no/apply_updates = yes/' /etc/dnf/automatic.conf
+sed -i 's/emit_via = stdio/emit_via = email/' /etc/dnf/automatic.conf
+sed -i "s/email_from =.*/email_from = dnf-automatic@${MAGE_DOMAIN}/" /etc/dnf/automatic.conf
+sed -i "s/email_to = root/email_to = ${MAGE_ADMIN_EMAIL}/" /etc/dnf/automatic.conf
+systemctl enable --now dnf-automatic.timer >/dev/null 2>&1
+
+#PRO_FTPD
+----------
+SERVER_IP_ADDR=$(ip route get 1 | awk '{print $NF;exit}')
+USER_IP=${SSH_CLIENT%% *}
+USER_GEOIP=$(geoiplookup ${USER_IP} | awk 'NR==1{print substr($4,1,2)}')
+FTP_PORT=$(shuf -i 5121-5132 -n 1)
+sed -i "s/server_sftp_port/${FTP_PORT}/" /etc/proftpd.conf
+sed -i "s/server_ip_address/${SERVER_IP_ADDR}/" /etc/proftpd.conf
+sed -i "s/sftp_domain/${MAGE_DOMAIN}/" /etc/proftpd.conf
+cp /usr/lib/systemd/system/proftpd.service /etc/systemd/system/proftpd.service
+sed -i "/^After.*/a OnFailure=service-status-mail@%n.service" /etc/systemd/system/proftpd.service
+sed -i "/\[Install\]/i Restart=on-failure\nRestartSec=10\n" /etc/systemd/system/proftpd.service
+systemctl daemon-reload
+systemctl enable proftpd.service >/dev/null 2>&1
+systemctl restart proftpd.service
+cat >> /root/mage/.mage_index <<END
+proftpd   ${USER_GEOIP}   ${FTP_PORT}   ${MAGE_WEB_USER_PASS}
+END
+
+#MYSQLROUTE
+------------
+ROUTER_PORT=$(shuf -i 10501-10539 -n 1)
+mkdir /etc/mysqlrouter
+touch /etc/mysqlrouter/mysqlrouter.conf
+cat >> /etc/mysqlrouter/mysqlrouter.conf <<END
+
+## REMOTE PORT ROUTING
+[routing:${MAGE_WEB_USER}_mysql]
+bind_address = ${SERVER_IP_ADDR}:${ROUTER_PORT}
+destinations = 127.0.0.1:3306
+mode = read-only
+END
+
+
+#Log-rotation
+--------------
+cat > /etc/logrotate.d/httpd <<END
+/home/${MAGE_WEB_USER}/logs/*log {
+    su root root
+    missingok
+    rotate 4
+    compressler = redis/" /etc/php.ini
+sed -i "s/session.serialize_handler = php/session.serialize_hand
+    notifempty
+    sharedscripts
+    delaycompress
+    postrotate
+        /bin/systemctl reload httpd.service > /dev/null 2>/dev/null || true
+    endscript
+}
+END
+
+
+systemctl daemon-reload
+systemctl restart httpd.service
+systemctl restart php-fpm.service
+
+
+#GUI-OPCACHE, CM_REDIS_TOOLS
+-----------------------------
+cd ${MAGE_WEB_ROOT_PATH}
+wget ${REPO_HWW}/opcache.zip
+#wget ${REPO_HWW}/cm_redis_tools.zip
+#unzip cm_redis_tools.zip
+unzip opcache.zip
+rm -rf cm_redis_tools.zip  opcache.zip
+#&& unzip mydb.zip mydb.zip
+chown -R ${MAGE_WEB_USER}:${MAGE_WEB_USER} ${MAGE_WEB_ROOT_PATH%/*}
+
+
+#Fixing permissions
+-------------------
+chown -R ${MAGE_WEB_USER}:${MAGE_WEB_USER} ${MAGE_WEB_ROOT_PATH}
+cd ${MAGE_WEB_ROOT_PATH}
+find . -type f -exec chmod 666 {} \;
+find . -type d -exec chmod 2777 {} \;
+setfacl -Rdm u:${MAGE_WEB_USER}:rwx,g:${MAGE_WEB_USER}:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
+setfacl -Rm u:${MAGE_WEB_USER}:rwx ${MAGE_WEB_ROOT_PATH%/*}
+
+chmod +x /usr/local/bin/*
+usermod -G apache ${MAGE_WEB_USER}
+
+#Saving Bash Profile
+-----------------------
+cd /home/${MAGE_WEB_USER}
+wget ${REPO_HWW}/bash_profile.zip
+unzip bash_profile.zip
+sed -i "s/MAGEWEBUESR/${MAGE_WEB_USER}/" .bash_profile
+rm -rf bash_profile.zip
+source .bash_profile

@@ -1,0 +1,6 @@
+https://www.thegeekdiary.com/how-to-list-all-modules-and-check-if-they-are-enabled-or-disabled-in-centos-rhel-8/
+https://docs.fedoraproject.org/en-US/modularity/installing-modules/
+
+check the rpm imported keys
+--------------------------
+https://linuxconfig.org/how-to-list-import-and-remove-archive-signing-keys-on-centos-7

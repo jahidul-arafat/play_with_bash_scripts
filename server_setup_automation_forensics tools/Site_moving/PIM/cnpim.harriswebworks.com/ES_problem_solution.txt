@@ -1,0 +1,4 @@
+https://docs.akeneo.com/3.0/maintain_pim/common_issues/index.html
+https://webkul.com/blog/elastic-indexes-akeneo/
+https://github.com/akeneo/ExtendedAttributeTypeBundle/issues/64
+https://discuss.elastic.co/t/akeneo-indexing-exception-mapperparsingexception/111948

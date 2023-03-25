@@ -1,0 +1,11 @@
+type,code,label-en_US,group,unique,useable_as_grid_filter,localizable,scopable,decimals_allowed,negative_allowed
+pim_catalog_text,name,Product Name,General,0,0,0,1,,
+pim_catalog_textarea,description,Description,General,0,0,0,1,,
+pim_catalog_textarea,short_description,Short Description,General,0,0,0,1,,
+pim_catalog_text,weight,Weight,General,0,0,0,1,,
+pim_catalog_price_collection,price,Price,General,0,0,0,1,0,
+pim_catalog_text,url_key,URL Key,General,0,0,0,1,,
+pim_catalog_text,meta_title,Meta Title,Marketing,0,0,0,1,,
+pim_catalog_text,meta_keyword,Meta Keyword,Marketing,0,0,0,1,,
+pim_catalog_textarea,meta_description,Meta Description,Marketing,0,0,0,1,,
+pim_catalog_image,image,Base Image,media,0,0,0,1,,

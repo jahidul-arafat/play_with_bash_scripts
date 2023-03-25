@@ -1,0 +1,6 @@
+vzctl create 109 --ostemplate centos-8-x86_64
+vzctl set 109 --ram 4G --swap 8G --save
+vzctl set 109 --ipadd 172.31.12.229 --hostname support.harriswebworks.com --save
+vim /etc/vz/conf/109.conf
+vzlist -a
+vzctl start 109 

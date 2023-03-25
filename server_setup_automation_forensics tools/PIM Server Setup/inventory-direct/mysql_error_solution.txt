@@ -1,0 +1,51 @@
+1. Stop mysql:
+systemctl stop mysqld
+
+2. Set the mySQL environment option 
+systemctl set-environment MYSQLD_OPTS="--skip-grant-tables"
+
+3. Start mysql usig the options you just set
+systemctl start mysqld
+
+4. Login as root
+mysql -u root
+
+5. Update the root user password with these mysql commands
+UPDATE mysql.user SET authentication_string=null WHERE User='root';
+FLUSH PRIVILEGES;
+exit;
+
+*** Edit ***
+As mentioned my shokulei in the comments, for 5.7.6 and later, you should use 
+   mysql> ALTER USER 'root'@'localhost' IDENTIFIED BY 'MyNewPass';
+Or you'll get a warning
+
+6. Stop mysql
+systemctl stop mysqld
+
+7. Unset the mySQL envitroment option so it starts normally next time
+systemctl unset-environment MYSQLD_OPTS
+
+8. Start mysql normally:
+systemctl start mysqld
+
+9. Try to login using null password:
+mysql -u root 
+ALTER mysql.USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY 'yourpasswd';
+
+#caching_sha2_password
+FLUSH PRIVILEGES;
+exit;
+
+10. Restart mysql normally:
+systemctl restart mysqld
+
+11. Try to login using new password:
+mysql -u root -p
+
+
+links:
+https://stackoverflow.com/questions/33510184/how-to-change-the-mysql-root-account-password-on-centos7
+https://stackoverflow.com/questions/36099028/error-1064-42000-you-have-an-error-in-your-sql-syntax-want-to-configure-a-pa
+
+https://www.programmersought.com/article/1911948673/

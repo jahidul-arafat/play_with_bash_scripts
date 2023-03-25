@@ -1,0 +1,5 @@
+Install docker in Centos 8:
+https://www.linuxtechi.com/install-docker-ce-centos-8-rhel-8/
+
+If dependency failed occured in 'systemctl start docker', then follow the below link:
+https://support.plesk.com/hc/en-us/articles/360012448554-Unable-to-start-Docker-service-Dependency-failed-for-Docker-Application-Container-Engine

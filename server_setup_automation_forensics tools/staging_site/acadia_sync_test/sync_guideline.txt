@@ -1,0 +1,38 @@
+Acadia Sync Tool Demonstration 
+Scenario -1: To make sure that there are no indexing 
+----------------------------------------------------
+1.1 Make sure all the dev/test sites are htpasswd protected and none is indexing 
+
+Scenario-2: To make sure the sync is working fine at it should be
+------------------------------------------------------------------
+2.1 Make the following changes in stagingacadia.harriswebworks.com
+   In the Page Section
+   -------------------
+   (a) Edit the Acadia home Page and add/remove some texts
+   (b) Edit the PIPELINE page and make add/remove some texts
+   (c) Edit the RESOURCES page and add/remove some texts
+  
+   In the Posts section
+   --------------------
+   (a) Add a new post named 'Test Post 1!' and add the below lines
+       This is line 1
+	   This is line 2
+	   Insert an Image here
+   (b) Add another new post named 'Test Post 2' and add the below lines
+       This is line 1
+   
+   In the Media section
+   --------------------
+   (a) Add 2x different Images
+
+2.2 Now Go to the sync and click the sync button and wait for few seconds 
+
+Scenario-3: Reassure that changes in existing posts are effectively visible in live site 
+and the redis-cache is considered effectively
+-----------------------------------------------------------------------------------------
+3.1 Make the following changes in stagingacadia.harriswebworks.com
+    In the Posts section
+	--------------------
+	(a) Re-edit the post named 'test Post 1!' and add the following line at the bottom:
+		This is line 3
+3.2 Now Go to the sync and click the sync button and wait for few seconds 

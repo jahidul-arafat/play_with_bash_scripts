@@ -1,0 +1,157 @@
+SYSTEM REQUIREMENT
+--------------------
+(1) PHP 7.3
+(2) MYSQL 5.6
+
+# Install PHP 7.3
+sudo apt-get install software-properties-common -y
+sudo add-apt-repository ppa:ondrej/php
+sudo apt-get update -y
+sudo apt-get install php7.3 php7.3-fpm php7.3-mysql libapache2-mod-php7.3 -y
+sudo apt-get install php7.3-mailparse
+sudo apt-get install php7.3-imap
+sudo apt-get install php7.3-redis
+sudo apt-get install php7.3-soap
+sudo apt-get install php7.3-intl
+sudo apt-get install php7.3-curl
+sudo apt-get install php7.3-dom
+sudo apt-get install php7.3-mcrypt
+sudo apt-get install php7.3-simplexml
+sudo apt-get install php7.3-spl
+sudo apt-get install php7.3-xsl
+sudo apt-get install php7.3-mbstring
+sudo apt-get install php7.3-gd
+sudo apt-get install php7.3-bcmath
+sudo apt-get install php7.3-zip
+
+#----------------------------------------------------
+curl, dom,mcrypt,simplexml,spl,xsl,intl,soap,mbstring
+#-----------------------------------------------------
+sudo systemctl enable php7.3-fpm
+sudo systemctl start php7.3-fpm
+sudo systemctl status php7.3-fpm
+php7.3 -m
+
+# Enable several modules so that Apache2 service can work with multiple PHP versions
+sudo a2enmod actions fcgid alias proxy_fcgi
+sudo systemctl restart apache2
+
+cat > swiftotter_exam.conf << END
+# Custom config : Adding the switterotter_exam by jahid
+<VirtualHost *:80>
+ServerName exam.swiftotter.com
+ServerAlias exam.swiftotter.com
+DocumentRoot /home/jahid/switterotter_exam/public_html/associate-study-guide
+ErrorLog /home/jahid/switterotter_exam/logs/error_log
+CustomLog /home/jahid/switterotter_exam/logs/access_log combined
+
+ProxyFCGIBackendType FPM
+<Location />
+DirectoryIndex index.php index.html
+</Location>
+#SetOutputFilter DEFLATE
+    AddHandler "proxy:unix:/run/php/php7.3-fpm.sock|fcgi://localhost/" php
+	#AddHandler "proxy:fcgi://127.0.0.1:9000" php
+<FilesMatch "\.php$">
+    SetHandler "proxy:unix:/run/php/php7.3-fpm.sock|fcgi://localhost/"
+    #SetHandler "proxy:fcgi://127.0.0.1:9000"
+</FilesMatch>
+<Directory /home/jahid/switterotter_exam/public_html/associate-study-guide>
+  Options IncludesNOEXEC FollowSymLinks
+  Require all granted
+  AllowOverride All
+</Directory>
+
+</Virtualhost>
+END
+
+sudo apache2ctl configtest
+
+cat >> /etc/hosts << END
+127.0.0.1 exam.swiftotter.com
+END
+
+sudo a2ensite swiftotter_exam.conf
+sudo a2dissite associate_exam.conf
+sudo a2enmod rewrite
+systemctl reload apache2
+ls -l /etc/apache2/sites-enabled
+vim /etc/hosts
+
+cp /etc/php/7.3/fpm/pool.d/www.conf /etc/php/7.3/fpm/pool.d/www.conf.BACK
+cp /etc/php/7.4/fpm/pool.d/www.conf /etc/php/7.3/fpm/pool.d/www.conf
+vim /etc/php/7.3/fpm/pool.d/www.conf
+|--> php_admin_value[error_log] = /home/jahid/switterotter_exam/logs/php-fpm-error.log
+|--> listen = /run/php/php7.3-fpm.sock
+
+sed -i '/PHPSESSID/d' /etc/php/7.3/apache2/php.ini
+sed -i "s,.*date.timezone.*,date.timezone = ${MAGE_TIMEZONE}," /etc/php/7.3/apache2/php.ini
+sed -i "s/session.save_handler = files/session.save_handler = files/" /etc/php/7.3/apache2/php.ini
+sed -i "s/session.serialize_handler = php/session.serialize_handler = igbinary/" /etc/php/7.3/apache2/php.ini
+
+
+systemctl daemon-reload
+systemctl restart php7.3-fpm
+systemctl restart apache2
+
+#Change default php to 7.3
+sudo update-alternatives --set php /usr/bin/php7.3
+
+
+#Multiple MYSQL Setup
+----------------------
+@user:root
+> Download mysql-5.7.31-linux-glibc2.12-x86_64.tar.gz
+> mkdir -p /bin/sandbox_dist
+> mv /home/jahid/Download/mysql-5.6.42-linux-glibc2.12-x86_64.tar.gz /bin/sandbox_dist/
+> export SANDBOX_AS_ROOT=1
+> cd /bin/sandbox_dist
+> make_sandbox mysql-5.7.31-linux-glibc2.12-x86_64.tar.gz
+> echo $HOME
+> cd /root/sandboxes/msb_5_7_31/
+> vim my.sandbox.cnf
+> mysql -h 127.0.0.1 -P 5731 -u root -pmsandbox
+    |--> create user jahid@127.0.0.1;
+    |--> create database exam_swiftotter_associate;
+    |--> GRANT ALL PRIVILEGES ON exam_swiftotter_associate.* TO 'jahid'@'127.0.0.1' WITH GRANT OPTION;
+    |--> show databases;
+    |--> show grants for jahid@127.0.0.1;
+
+
+# SwiftOtter Magento Exam setup
+@user-jahid
+-----------
+git clone https://gitlab.com/swiftotter/associate-study-guide.git
+cd associate-study-guide/
+composer install --ignore-platform-reqs
+bin/magento setup:install \
+--db-host="127.0.0.1:5731" \
+--db-name="exam_swiftotter_associate" \
+--db-user="jahid" \
+--db-password="11mja2018" \
+--admin-firstname="JAHIDUL" \
+--admin-lastname="ARAFAT" \
+--admin-email="jahidapon@gmail.com" \
+--admin-user="admin" \
+--admin-password="11mja2018" \
+--cleanup-database \
+--session-save=files \
+--use-rewrites=1
+
+php bin/magento deploy:mode:show
+php bin/magento deploy:mode:set developer
+bin/magento cron:install [--force]
+bin/magento sampledata:deploy --verbose
+bin/magento setup:upgrade
+bin/magento cache:clean
+bin/magento cache:flush
+
+#Fixing File Permission
+------------------------
+MAGE_WEB_ROOT_PATH="/home/jahid/switterotter_exam/public_html"
+chown -R jahid:jahid /home/jahid/switterotter_exam/public_html
+cd /home/jahid/switterotter_exam/public_html
+find . -type f -exec chmod 666 {} \;
+find . -type d -exec chmod 2777 {} \;
+setfacl -Rdm u:jahid:rwx,g:jahid:r-x,o::- ${MAGE_WEB_ROOT_PATH%/*}
+setfacl -Rm u:${MAGE_WEB_USER}:rwx ${MAGE_WEB_ROOT_PATH%/*}

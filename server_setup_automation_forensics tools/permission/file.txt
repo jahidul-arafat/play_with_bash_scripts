@@ -1,0 +1,5 @@
+find . -type d -print0 | xargs -r0 chmod 777 && find . -type f -print0 | xargs -r0 chmod 666 && chmod u+x bin/magento && chmod u+x cm_redis_tools/rediscli.php && chmod u+x cm_redis_tools/rediscache.php && chmod u+x webp-watchers.sh
+
+Search a specific word
+-----------------------
+grep -r -H --include=*.php 'prod' /home/usync/public_html/*
