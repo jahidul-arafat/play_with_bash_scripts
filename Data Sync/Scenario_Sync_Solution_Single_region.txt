@@ -1,0 +1,211 @@
+Problem:
+--------
+Suppose you have two containers under the same EC2 instance in N.Virginia under the hww_accu_cluster network as below:
+> sudo vzlist -a
+CTID      NPROC STATUS    IP_ADDR         HOSTNAME                      PublicIP
+101         33 running   10.0.0.9        lab1.harriswebworks.com        34.194.65.195
+102         32 running   10.0.0.12       lab2.harriswebworks.com        3.224.10.8.175
+
+Create a folder named "/root/testdata/rsync" in both containers and make sure data sync between these folders in both of these containers and remote machines.
+
+
+Tools are suggested to use:
+---------------------------
+(1) rsync                   --> if you use it, then u might have to set the cronjob
+(2) lsyncd                  --> this doesnt need to setup the crobjob, rather this is a "LIVE MIRRORING"
+
+
+Hints:
+-----
+Step-1: ssh key setup and 
+==========================
+        put the 101's public key ---> into 102's authorized key list and 
+        put the 102's public key ---> into 101's authrorized key list #[ ~/.ssh/authorized_keys ]
+****** Note: if .ssh folder doesnt exits
+                -> The ".ssh" folder maynot be available [if my case, it was availble once I generated the ssh keys]
+                -> Create the ~/.ssh folder with 0700
+                -> Create ~/.ssh/authroized_keys with 0644 
+                
+************************************* Step1: Codes (START) **************************************
+@main
+>   sudo vzctl enter 101
+    @101
+    ----
+    > ssh-keygen -f ~/.ssh/id_rsa -q -P ""
+    > touch ~/.ssh/authorized_keys
+    > chmod 0644 ~/.ssh/authorized_keys
+    > cat ~/.ssh/id_rsa.pub             ----> Copy it and put it into the @102's ==> ~/.ssh/authorized_keys 
+    > vim ~/.ssh/authorized_keys        ----> paste the 102's ~/.ssh/id_ras.pub here
+    
+@main
+>   sudo vzctl enter 102
+    @102
+    ----
+    > ssh-keygen -f ~/.ssh/id_rsa -q -P ""
+    > touch ~/.ssh/authorized_keys
+    > chmod 0644 ~/.ssh/authorized_keys
+    > cat ~/.ssh/id_rsa.pub             ----> Copy it and put it into the @101's ==> ~/.ssh/authorized_keys 
+    > vim ~/.ssh/authorized_keys        ----> paste the 101's ~/.ssh/id_ras.pub here
+
+****Link: https://www.digitalocean.com/community/tutorials/how-to-copy-files-with-rsync-over-ssh
+
+************************************* Step1: Codes (END) **************************************
+
+
+Step-2: Setup a filebrowser in both of the containers
+=====================================================
+******* Note: I have tried to setup the filebrowser 
+                (a) in local machine        ---> it successfully install and browsable at port 80
+                (b) in EC2 instance         ---> it successfully install and but not browsable, through I                                       didnt find any error, why???
+                (c) in Containers           ---> it failed while trying to put the filebrowser in                                               /usr/local/bin
+************************************* Step2: Codes (START) **************************************
+Hint: Dont use sudo there
+@main
+> curl -fsSL https://filebrowser.xyz/get.sh | bash
+> filebrowser -r /path/to/your/files   ----> automatically bind at 127.0.0.1:80
+
+Alternative 1
+> filebrowser --port 80 &              ----> This may give you "No config file found", but ignore it
+                                       ----> 127.0.0.1:80
+
+Alternative 2
+> filebrowser --port 8080 &            ----> This may give you "No config file found", but ignore it
+                                       ----> 127.0.0.1:8080
+
+
+# Check whether filebrowser is running in background
+> jobs
+> kill %jobid (i.e. kill %1) 
+
+@101 --> filebrowser failed here
+@102 --> filebrowser failed here
+
+****Link: https://filebrowser.xyz/installation
+
+************************************* Step2: Codes (ENDS) ***************************************
+                
+Step-3: Create the directory /root/testdata/rsync in both 101 and 102 containers
+================================================================================
+        (a) create /root/testdata/rsync in Container# 101
+            ---> change the filepermission to 777 with -R (recursive)
+        (b) create /root/testdata/rsync in Container# 102
+            ---> change the filepermission to 777 with -R (recursive)
+        
+******* Note: Why 777? So that anyone can upload files in the directory through browser.
+***** But hence the "filebrowser" setup didnt work in our EC2 instance, this 777 is not important here
+
+************************************* Step3: Codes (START) **************************************
+@101
+----
+> mkdir -p /root/testdata/rsync
+> chmod -R 777 /root/testdata/rsync
+
+Now Create Few Files and folders here (Folder-1, Folder-3, file1.txt)
+> cd /root/testdata/rsync
+    > mkdir folder-1
+    > mkdir folder-3
+    > touch file1.txt
+
+@102
+----
+> mkdir -p /root/testdata/rsync
+> chmod -R 777 /root/testdata/rsync
+
+Now Create Few Files and folders here (Folder-2, Folder-4, file2.txt)
+> cd /root/testdata/rsync
+    > mkdir folder-2
+    > mkdir folder-4
+    > touch file2.txt
+
+
+************************************* Step3: Codes (ENDS) ***************************************
+
+
+Step-4: Rsync files over
+A. Single time Sync
+-----------------
+4.1 Login on Container-1: 10.0.0.9 and rsync the file over to Container-2: 10.0.0.12
+@101
+> rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress /root/testdata/rsync 10.0.0.12:/root/testdata/
+
+4.2 Login on Container-2: 10.0.0.12 and rsync the file over to Container-1: 10.0.0.9
+@102
+> rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress /root/testdata/rsync 10.0.0.9:/root/testdata/
+
+B. Sync all the time
+-----------------
+4.3 Login on Container-1: 10.0.0.9 and edit its crontab as below
+@101
+> crontab -e
+------------------------------------------------------------------------------------------------------
+* * * * * rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress /root/testdata/rsync 10.0.0.12:/root/testdata/                                                               
+------------------------------------------------------------------------------------------------------
+:wq
+
+> crontab -l
+
+4.4 Login on Container-2: 10.0.0.12 and edit its crontab as below
+@102
+> crontab -e
+------------------------------------------------------------------------------------------------------
+* * * * * rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress /root/testdata/rsync 10.0.0.9:/root/testdata/                                                               
+------------------------------------------------------------------------------------------------------
+:wq
+
+> crontab -l
+
+*** Note: I had experienced some error while setting the cron, however those were automatically resolved later
+
+C. Stop the rsync
+--------------
+4.5 Login on Container-1: 10.0.0.9 and comment its rsync cron
+4.6 Login on Container-2: 10.0.0.12 and comment its rsync cron
+
+
+Step-5: lsyncd with rsyncssh (a better alternative of rsync, Live Syncing Mirror Daemon)
+---------------------------------------------------------------------------------------
+
+5.1 Install the lsyncd package
+@101
+> yum install lsyncd
+
+@102
+> yum install lsyncd
+
+**** Note: make sure you have epel repo installed in both container. Lsyncd is available at epel repo
+
+5.2 Login on Container-1: 10.0.0.9 and execute the below lsyncd command     --->remote host: 10.0.0.12
+@101
+# Syntax: lsyncd -rsyncssh /home remotehost.org backup-home/
+> lsyncd -rsyncssh /root/testdata/rsync 10.0.0.12 /root/testdata/rsync  
+> ps aux|grep lsyncd            ---> to check whether the lsyncd is running or not
+
+5.3 Login on Container-2: 10.0.0.12 and execute the below lsyncd command    --->remote host: 10.0.0.9
+@102
+> lsyncd -rsyncssh /root/testdata/rsync 10.0.0.9 /root/testdata/rsync  
+> ps aux|grep lsyncd            ---> to check whether the lsyncd is running or not
+
+
+**** Note: 
+    (a) you dont need to enable and start this daemon
+    > systemctl status lsyncd   (dead,inactive)
+    (b) if you want to kill this lsyncd job, just try. (if you ever mistaken in lsyncd, just kill the process and start a new one)
+        > pkill lsyncd
+
+
+Video Link:
+----------
+(a) Major Link: https://www.youtube.com/watch?v=hgOv8bxJCdA&t=42s
+
+
+Other Links:
+------------
+(a) https://www.digitalocean.com/community/tutorials/how-to-copy-files-with-rsync-over-ssh
+(b) https://github.com/axkibe/lsyncd
+(c) https://filebrowser.xyz/installation
+
+
+
+
+
+

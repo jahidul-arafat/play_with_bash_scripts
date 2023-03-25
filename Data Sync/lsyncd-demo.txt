@@ -1,0 +1,26 @@
+5.1 Install the lsyncd package
+@101
+> yum install lsyncd
+
+@102
+> yum install lsyncd
+
+**** Note: make sure you have epel repo installed in both container. Lsyncd is available at epel repo
+
+5.2 Login on Container-1: 10.0.0.9 and execute the below lsyncd command     --->remote host: 10.0.0.12
+@101
+# Syntax: lsyncd -rsyncssh /home remotehost.org backup-home/
+> lsyncd -rsyncssh /root/testdata/rsync 10.0.0.12 /root/testdata/rsync  
+> ps aux|grep lsyncd            ---> to check whether the lsyncd is running or not
+
+5.3 Login on Container-2: 10.0.0.12 and execute the below lsyncd command    --->remote host: 10.0.0.9
+@102
+> lsyncd -rsyncssh /root/testdata/rsync 10.0.0.9 /root/testdata/rsync  
+> ps aux|grep lsyncd            ---> to check whether the lsyncd is running or not
+
+
+**** Note: 
+    (a) you dont need to enable and start this daemon
+    > systemctl status lsyncd   (dead,inactive)
+    (b) if you want to kill this lsyncd job, just try. (if you ever mistaken in lsyncd, just kill the process and start a new one)
+        > pkill lsyncd

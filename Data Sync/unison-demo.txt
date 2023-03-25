@@ -1,0 +1,30 @@
+A. Installing unison
+Link: https://gist.github.com/federivo/a1c56909b3f712e516a3cd2f70c0eaa6
+
+> yum install ocaml ocaml-camlp4-devel ctags ctags-etags
+
+> cd ~
+> wget http://www.seas.upenn.edu/~bcpierce/unison//download/releases/stable/unison-2.48.4.tar.gz
+> tar xvfz unison-2.48.4.tar.gz
+> cd src
+> make
+
+> sudo cp -v unison /usr/local/sbin/
+> sudo cp -v unison /usr/bin/
+
+> cd ~
+> rm -fr src
+
+B. Unison simulation
+Let us assume you have two directories,
+    (a) Directory-A: /home/user/Documents/dirA/ and 
+    (b) Directory-B: /home/user/Documents/dirB/
+
+To synchronize these two, you may use:
+> unison -ui text /home/user/Documents/dirA/ /home/user/Documents/dirB/
+
+Comment:
+-------
+In output, unison will display each and every directory and file that is different in the two directories you have asked to sync. It will recommend to additively synchronize (replicate missing file in both locations) on the initial run, then create and maintain a synchronization tree on your machine, and on subsequent runs it will implement true synchronization (i.e., if you delete a file from .../dirA, it will get deleted from .../dirB as well. You can also compare each and every change and optionally choose to forward or reverse synchronize between the two directories.
+
+Optionally, to launch graphical interface, simply remove the -ui text option from your command, although I find the cli simpler and faster to use.

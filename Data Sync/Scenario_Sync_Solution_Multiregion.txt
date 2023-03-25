@@ -1,0 +1,237 @@
+Problem:
+--------
+Suppose you have two containers under the same EC2 instance in N.Virginia under the hww_accu_cluster network as below:
+> sudo vzlist -a
+CTID      NPROC STATUS    IP_ADDR         HOSTNAME                      PublicIP
+101         33 running   10.0.0.9        lab1.harriswebworks.com        34.194.65.195           <--- This is my source machine  
+102         32 running   10.0.0.12       lab2.harriswebworks.com        3.224.10.8.175
+
+and You have a node in Seoul under the same network as private instance with IP 10.0.1.41       <--- This is my destination machine
+
+Create a folder named "/root/testdata/rsync" in NV-Container-101 (10.0.0.9) and Seoul-EC2 instance (10.0.1.41) and make sure data 
+sync between these folders.
+
+
+Tools are suggested to use:
+---------------------------
+(1) rsync                   --> if you use it, then u might have to set the cronjob
+(2) lsyncd                  --> this doesnt need to setup the crobjob, rather this is a "LIVE MIRRORING"
+
+
+********** My Users here were **********
+NV-Container-1@101-10.0.0.9     - root
+Seoul-EC2-10.0.1.41             - root
+****************************************
+However, you can choose a different user too
+
+Hints:
+-----
+Step-1: ssh key setup and 
+==========================
+        put the 101's public key ---> into Seoul's (10.0.1.41) authorized key list and 
+        put the Seoul's (10.0.1.41) public key ---> into 101's authrorized key list #[ ~/.ssh/authorized_keys ]
+****** Note: if .ssh folder doesnt exits
+                -> The ".ssh" folder maynot be available [if my case, it was availble once I generated the ssh keys]
+                -> Create the ~/.ssh folder with 0700
+                -> Create ~/.ssh/authroized_keys with 0644 
+                
+************************************* Step1: Codes (START) **************************************
+@main-NV
+>   sudo vzctl enter 101
+    @101: 10.0.0.9                      ---> (if ssh public key doesnt exists only then, else not)
+    --------------
+    A. ssh key generation and updating the authorized_keys
+    > ssh-keygen -f ~/.ssh/id_rsa -q -P ""
+    > touch ~/.ssh/authorized_keys
+    > chmod 0644 ~/.ssh/authorized_keys
+    > cat ~/.ssh/id_rsa.pub             ----> Copy it and put it into the @Seoul's EC2 (10.0.1.41) ==> ~/.ssh/authorized_keys 
+    > vim ~/.ssh/authorized_keys        ----> paste the Seoul's (10.0.1.41) ~/.ssh/id_ras.pub here
+    
+    B. ssh into the Seoul's EC2 (10.0.1.41), so that it becomes a known host to @101
+    > ssh root@10.0.1.41
+    > exit
+    > cat ~/.ssh/known_hosts            ----> check 10.0.1.41 is available 
+    --------------------------------------------------------------------------------------------------------------------------------
+    10.0.1.41 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJtwIiOz5ZwhLugaWlgsubicXzlgivQDivMhHgjPkVQm9PXG1WVtDGouEWeRMsu+Nz7Bijxaxq6tNRwvGBWvOHY=
+    --------------------------------------------------------------------------------------------------------------------------------
+    
+    C. check whether you have enabled PasswordAuthentication yes
+    > vim /etc/ssh/sshd_conf
+        ------------------------------
+        PasswordAuthentication yes
+        ------------------------------
+    ***** You doesnt require the password once the ssh configuration is ok for syncing 
+    
+@main-Seoul: 10.0.1.41
+    @seoul (10.0.1.41)              ---> (if ssh public key doesnt exists only then, else not)
+    ------------------
+    A. ssh key generation and updating the authorized_keys
+    
+    > ssh-keygen -f ~/.ssh/id_rsa -q -P ""
+    > touch ~/.ssh/authorized_keys
+    > chmod 0644 ~/.ssh/authorized_keys
+    > cat ~/.ssh/id_rsa.pub             ----> Copy it and put it into the @101's ==> ~/.ssh/authorized_keys 
+    > vim ~/.ssh/authorized_keys        ----> paste the 101's ~/.ssh/id_ras.pub here
+    
+    B. ssh into the NV-Container-1' @101, so that it becomes a known host to Seoul-EC2-10.0.1.41
+    > ssh root@10.0.0.9
+    > exit
+    > cat ~/.ssh/known_hosts            ----> check NV-Container-@101-10.0.0.9 is available 
+    --------------------------------------------------------------------------------------------------------------------------------
+    10.0.0.9 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBG6FrcMWvhFODwJmNd3AAHoxY8ifR/QDr8+j95CD8YCfKbTyzHYXMFPVLHt2VfVhwm/9XGVskRgJR/Ct28eC/Os=
+    --------------------------------------------------------------------------------------------------------------------------------
+    
+    C. check whether you have enabled PasswordAuthentication yes
+    > vim /etc/ssh/sshd_conf
+        ------------------------------
+        PasswordAuthentication yes
+        ------------------------------
+    ***** You doesnt require the password once the ssh configuration is ok for syncing 
+
+****Link: https://www.digitalocean.com/community/tutorials/how-to-copy-files-with-rsync-over-ssh
+
+************************************* Step1: Codes (END) **************************************
+
+Step-2: Create the directory /root/testdata/rsync in both NV-Container-1@101:10.0.0.9 and Seoul-EC2-10.0.1.41
+=============================================================================================================
+        (a) create /root/testdata/rsync in NV-Container@101-10.0.0.9
+            ---> change the filepermission to 777 with -R (recursive)
+        (b) create /root/testdata/rsync in Seoul-EC2-10.0.1.41
+            ---> change the filepermission to 777 with -R (recursive)
+        
+******* Note: Why 777? So that anyone can upload files in the directory through browser.
+***** But hence the "filebrowser" setup didnt work in our EC2 instance, this 777 is not important here
+
+************************************* Step2: Codes (START) **************************************
+@101-NV-Container-10.0.0.9
+--------------------------
+> mkdir -p /root/testdata/rsync
+> chmod -R 777 /root/testdata/rsync
+
+Now Create Few Files and folders here (Folder-1, Folder-3, file1.txt)
+> cd /root/testdata/rsync
+    > mkdir folder-1
+    > mkdir folder-3
+    > touch file1.txt
+
+@seoul (10.0.1.41)
+------------------
+> mkdir -p /root/testdata/rsync
+> chmod -R 777 /root/testdata/rsync
+
+Now Create Few Files and folders here (Folder-2, Folder-4, file2.txt)
+> cd /root/testdata/rsync
+    > mkdir folder-2
+    > mkdir folder-4
+    > touch file2.txt
+
+
+************************************* Step2: Codes (ENDS) ***************************************
+
+
+Step-3: Rsync files over ********* (This is not live sync, it requires cron)
+========================
+A. Single time Sync
+-------------------
+3.1 Login on NV-Container-1: 10.0.0.9 and rsync the file over to Seoul-EC2-10.0.1.41
+
+@101
+> rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress /root/testdata/rsync 10.0.1.41:/root/testdata/
+
+(***    This will sync the whole rsync dir of 10.0.0.9 into the /root/testdata of 10.0.1.41)
+(****   /root/testdata/rsync and /root/testdata/rsync/ are not same, one sync the whole dir, another sync the contents of dir)
+
+3.2 Login on Seoul-EC2-10.0.1.41 and rsync the file over to NV-Container-1: 10.0.0.9
+
+@Seoul-EC2-10.0.1.41
+> rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress /root/testdata/rsync 10.0.0.9:/root/testdata/
+
+B. Sync all the time
+--------------------
+3.3 Login on NV-Container-1: 10.0.0.9 and edit its crontab as below
+@101
+> crontab -e
+------------------------------------------------------------------------------------------------------
+* * * * * rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress /root/testdata/rsync 10.0.1.41:/root/testdata/                                                               
+------------------------------------------------------------------------------------------------------
+:wq
+
+> crontab -l
+
+3.4 Login on Seoul-EC2-10.0.1.41 and edit its crontab as below
+
+@Seoul-EC2-10.0.1.41
+> crontab -e
+------------------------------------------------------------------------------------------------------
+* * * * * rsync -avz -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" --progress /root/testdata/rsync 10.0.0.9:/root/testdata/                                                               
+------------------------------------------------------------------------------------------------------
+:wq
+
+> crontab -l
+
+*** Note: I had experienced some error while setting the cron, however those were automatically resolved later
+
+C. Stop the rsync
+-----------------
+3.5 Login on Container-1: 10.0.0.9 and comment its rsync cron
+3.6 Login on Seoul-EC2-10.0.1.41 and comment its rsync cron
+
+
+Step-4: lsyncd with rsyncssh (a better alternative of rsync, Live Syncing Mirror Daemon)
+========================================================================================
+
+4.1 Install the lsyncd package
+@101-NV-Container-10.0.0.9
+> yum install lsyncd
+
+@Seoul-EC2-10.0.1.41
+> yum install lsyncd
+
+**** Note: make sure you have epel repo installed in both container. Lsyncd is available at epel repo
+
+4.2 Login on NV-Container-: 10.0.0.9 and execute the below lsyncd command     --->remote host: Seoul-EC2-10.0.1.41
+
+@101-NV-Container-10.0.0.9
+--------------------------
+# Syntax: lsyncd -rsyncssh /home remotehost.org backup-home/
+> lsyncd -rsyncssh /root/testdata/rsync 10.0.1.41 /root/testdata/rsync  
+
+> ps aux|grep lsyncd                                                ---> to check whether the lsyncd is running or not
+----------------------------------------------------------------------------------------------------------------------------------
+root     17970  0.0  0.0  12160  1024 ?        Ss   14:36   0:00 lsyncd -rsyncssh /root/testdata/rsync 10.0.1.41 /root/testdata/rsync                                                ---> (** if this line doesnt come, then lsyncd is not working)
+
+root     18123  0.0  0.0   9092   664 pts/0    S+   16:04   0:00 grep --color=auto lsyncd
+----------------------------------------------------------------------------------------------------------------------------------
+
+4.3 Login on Seoul-EC2-10.0.1.41 and execute the below lsyncd command    --->remote host: @101-10.0.0.9
+
+@Seoul-EC2-10.0.1.41
+--------------------
+> lsyncd -rsyncssh /root/testdata/rsync 10.0.0.9 /root/testdata/rsync  
+> ps aux|grep lsyncd                                                ---> to check whether the lsyncd is running or not
+----------------------------------------------------------------------------------------------------------------------------------
+root     11677  0.0  0.0  12160  1000 ?        Ss   14:43   0:00 lsyncd -rsyncssh /root/testdata/rsync 10.0.0.9 
+/root/testdata/rsync                                                ---> (** if this line doesnt come, then lsyncd is not working)
+root     11846  0.0  0.0 112716   964 pts/0    R+   16:07   0:00 grep --color=auto lsyncd
+----------------------------------------------------------------------------------------------------------------------------------
+
+**** Note: 
+    (a) you dont need to enable and start this daemon
+    > systemctl status lsyncd   (dead,inactive)
+    (b) if you want to kill this lsyncd job, just try. (if you ever mistaken in lsyncd, just kill the process and start a new one)
+        > pkill lsyncd
+    (c) have a look at the process state (Ss, R+, S+)
+        
+        
+
+My Comment
+----------
+- Lsyncd for the Dhaka office when the developers will be working together
+- rsync for the USA time, at a specific time interval
+
+
+
+
+
+
+
